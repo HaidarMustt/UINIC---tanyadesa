@@ -1,8 +1,336 @@
+// TanyaDesa database schema (Prisma 7)
+//
+// Design rules:
+// 1. Rupiah amounts are BigInt (whole rupiah, no decimals).
+// 2. AI never stores or calculates numbers. Numbers only come from BudgetItem.
+// 3. Every answer records the budget rows it was based on (AnswerSource).
+// 4. A document is visible to residents only after an operator reviews and publishes it.
+// 5. Personal data of aid recipients (e.g. BLT recipient names) is never stored.
+
 generator client {
-    provider = "prisma-client"
-    output = "../src/generated/prisma"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  OPERATOR // village officer: upload, review, publish APBDes, respond to aspirations
+  BPD // village consultative body: read and respond to aspirations
+  ADMIN // system administrator
+}
+
+enum DocumentStatus {
+  UPLOADED // file received, not processed yet
+  PROCESSING // being parsed
+  IN_REVIEW // parsed, waiting for operator review
+  PUBLISHED // visible to residents
+  FAILED // parsing failed, see errorMessage
+  ARCHIVED // replaced by a newer version
+}
+
+enum EntryType {
+  REVENUE // pendapatan
+  EXPENDITURE // belanja
+  FINANCING_RECEIPT // pembiayaan penerimaan
+  FINANCING_EXPENDITURE // pembiayaan pengeluaran
+}
+
+enum FundSource {
+  DD // Dana Desa (APBN)
+  ADD // Alokasi Dana Desa
+  PADES // Pendapatan Asli Desa
+  BHP // Bagi Hasil Pajak dan Retribusi
+  BANKEU_KAB // Bantuan Keuangan Kabupaten
+  BANKEU_PROV // Bantuan Keuangan Provinsi
+  SILPA // Sisa Lebih Perhitungan Anggaran
+  OTHER
+}
+
+enum ActivityStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  PARTIALLY_RECEIVED // revenue/financing partly received
+  RECEIVED // revenue/financing fully received
+}
+
+enum AnswerStatus {
+  ANSWERED // answered with source rows
+  NOT_FOUND // not in the APBDes; AI must not make things up
+  REFUSED // personal data or off-topic
+  ERROR // system error
+}
+
+enum AspirationStatus {
+  NEW
+  FORWARDED // sent to village officers and BPD
+  RESPONDED
+  RESOLVED
+  REJECTED // spam or violates rules
+}
+
+// ============================================================
+// AREA
+// ============================================================
+
+model Desa {
+  id             String   @id @default(cuid())
+  slug           String   @unique // public URL: /desa/sukamaju
+  name           String
+  district       String // kecamatan
+  regency        String // kabupaten
+  province       String?
+  population     Int?
+  householdCount Int?
+  isSimulation   Boolean  @default(false) // true = show "Data Simulasi" label
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  dusuns      Dusun[]
+  users       User[]
+  documents   ApbdesDocument[]
+  categories  AspirationCategory[]
+  aspirations Aspiration[]
+  questions   Question[]
+
+  @@map("desa")
+}
+
+model Dusun {
+  id     String   @id @default(cuid())
+  desaId String
+  name   String
+  rts    String[] // e.g. ["01", "02", "03"]
+
+  desa        Desa         @relation(fields: [desaId], references: [id], onDelete: Cascade)
+  budgetItems BudgetItem[]
+  aspirations Aspiration[]
+
+  @@unique([desaId, name])
+  @@map("dusun")
+}
+
+// ============================================================
+// USERS (village officers, BPD, admin only)
+// Residents do not need an account to ask questions or send aspirations.
+// ============================================================
+
+model User {
+  id           String    @id @default(cuid())
+  desaId       String? // null for ADMIN
+  name         String
+  email        String    @unique
+  passwordHash String // never the plain password
+  role         Role
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  desa               Desa?                @relation(fields: [desaId], references: [id])
+  uploadedDocuments  ApbdesDocument[]     @relation("Uploader")
+  publishedDocuments ApbdesDocument[]     @relation("Publisher")
+  responses          AspirationResponse[]
+  activityLogs       ActivityLog[]
+
+  @@index([desaId])
+  @@map("users")
+}
+
+// ============================================================
+// APBDES
+// ============================================================
+
+model ApbdesDocument {
+  id           String         @id @default(cuid())
+  desaId       String
+  fiscalYear   Int
+  version      Int            @default(1) // APBDes Perubahan = next version
+  title        String // e.g. "APBDes 2026"
+  realizedAsOf DateTime? // realization counted up to this date
+  fileName     String
+  fileUrl      String // location in Supabase Storage
+  fileType     String // "xlsx"
+  status       DocumentStatus @default(UPLOADED)
+  errorMessage String?
+
+  // Summary: numbers are computed by code, the narrative is written by AI from those numbers
+  aiSummary          String?
+  aiSummaryCreatedAt DateTime?
+
+  uploaderId  String
+  publisherId String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  desa      Desa         @relation(fields: [desaId], references: [id], onDelete: Cascade)
+  uploader  User         @relation("Uploader", fields: [uploaderId], references: [id])
+  publisher User?        @relation("Publisher", fields: [publisherId], references: [id])
+  items     BudgetItem[]
+  questions Question[]
+
+  @@unique([desaId, fiscalYear, version])
+  @@index([desaId, status])
+  @@map("apbdes_documents")
+}
+
+model Sector {
+  code Int    @id // 1 to 5, village expenditure sectors (bidang)
+  name String // e.g. "Pelaksanaan Pembangunan Desa"
+
+  budgetItems BudgetItem[]
+
+  @@map("sectors")
+}
+
+model BudgetItem {
+  id          String         @id @default(cuid())
+  documentId  String
+  accountCode String // kode rekening, e.g. "2.1.01"
+  entryType   EntryType
+  sectorCode  Int? // only for EXPENDITURE
+  description String // uraian
+  dusunId     String? // null = whole village
+  rt          String? // e.g. "03" or range "10-12"
+  fundSource  FundSource
+  budget      BigInt // anggaran, rupiah
+  realized    BigInt         @default(0) // realisasi, rupiah
+  status      ActivityStatus
+  note        String? // keterangan
+  sourceRow   Int? // row number in the original file, shown to residents
+  sortOrder   Int
+
+  document ApbdesDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sector   Sector?        @relation(fields: [sectorCode], references: [code])
+  dusun    Dusun?         @relation(fields: [dusunId], references: [id])
+
+  citedIn     AnswerSource[]
+  aspirations Aspiration[]
+
+  @@unique([documentId, accountCode])
+  @@index([documentId, entryType])
+  @@index([documentId, sectorCode])
+  @@index([documentId, dusunId])
+  @@map("budget_items")
+}
+
+// ============================================================
+// Q&A (TANYA)
+// ============================================================
+
+model Question {
+  id         String       @id @default(cuid())
+  desaId     String
+  documentId String // document used to answer
+  sessionId  String // anonymous browser id, for rate limiting
+  text       String
+  intent     Json? // AI understanding: { type, filter: { dusun, sectorCode, ... } }
+  answer     String?
+  status     AnswerStatus
+  durationMs Int?
+  isHelpful  Boolean? // resident feedback
+  createdAt  DateTime     @default(now())
+
+  desa     Desa           @relation(fields: [desaId], references: [id], onDelete: Cascade)
+  document ApbdesDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sources  AnswerSource[]
+
+  @@index([desaId, createdAt])
+  @@index([sessionId, createdAt])
+  @@map("questions")
+}
+
+// Budget rows cited by one answer (many-to-many)
+model AnswerSource {
+  questionId   String
+  budgetItemId String
+
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  budgetItem BudgetItem @relation(fields: [budgetItemId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, budgetItemId])
+  @@map("answer_sources")
+}
+
+// ============================================================
+// ASPIRATIONS
+// ============================================================
+
+model AspirationCategory {
+  id     String @id @default(cuid())
+  desaId String
+  name   String // e.g. "Penerangan jalan", "Air bersih dan irigasi"
+
+  desa        Desa         @relation(fields: [desaId], references: [id], onDelete: Cascade)
+  aspirations Aspiration[]
+
+  @@unique([desaId, name])
+  @@map("aspiration_categories")
+}
+
+model Aspiration {
+  id                  String           @id @default(cuid())
+  desaId              String
+  dusunId             String?
+  rt                  String?
+  content             String
+  senderName          String? // optional (anonymous allowed)
+  contact             String? // optional, visible only to officers and BPD
+  categoryId          String? // set by AI, editable by operator
+  aiConfidence        Float? // 0 to 1, low = needs manual check
+  relatedBudgetItemId String? // APBDes activity discussed, e.g. PJU Tegalsari
+  status              AspirationStatus @default(NEW)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  desa              Desa                 @relation(fields: [desaId], references: [id], onDelete: Cascade)
+  dusun             Dusun?               @relation(fields: [dusunId], references: [id])
+  category          AspirationCategory?  @relation(fields: [categoryId], references: [id])
+  relatedBudgetItem BudgetItem?          @relation(fields: [relatedBudgetItemId], references: [id])
+  responses         AspirationResponse[]
+
+  @@index([desaId, status])
+  @@index([desaId, categoryId])
+  @@map("aspirations")
+}
+
+model AspirationResponse {
+  id           String   @id @default(cuid())
+  aspirationId String
+  userId       String
+  content      String
+  isPublic     Boolean  @default(true) // false = internal note
+  createdAt    DateTime @default(now())
+
+  aspiration Aspiration @relation(fields: [aspirationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@index([aspirationId])
+  @@map("aspiration_responses")
+}
+
+// ============================================================
+// AUDIT (security criterion: who changed what)
+// ============================================================
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String // e.g. "UPLOAD_DOCUMENT", "PUBLISH_DOCUMENT", "UPDATE_ASPIRATION_STATUS"
+  entity    String // e.g. "ApbdesDocument"
+  entityId  String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@map("activity_logs")
 }
