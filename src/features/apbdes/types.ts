@@ -1,25 +1,14 @@
 // Domain types for APBDes data.
 // Values match the enums in prisma/schema.prisma, so parser results can be saved directly.
- 
+
 export type EntryType = "REVENUE" | "EXPENDITURE" | "FINANCING_RECEIPT" | "FINANCING_EXPENDITURE";
- 
+
 export type FundSource =
-  | "DD"
-  | "ADD"
-  | "PADES"
-  | "BHP"
-  | "BANKEU_KAB"
-  | "BANKEU_PROV"
-  | "SILPA"
-  | "OTHER";
- 
+  "DD" | "ADD" | "PADES" | "BHP" | "BANKEU_KAB" | "BANKEU_PROV" | "SILPA" | "OTHER";
+
 export type ActivityStatus =
-  | "NOT_STARTED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "PARTIALLY_RECEIVED"
-  | "RECEIVED";
- 
+  "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "PARTIALLY_RECEIVED" | "RECEIVED";
+
 // One row of the APBDes, as read from the Excel file.
 // Rupiah is a plain number here; convert to BigInt only when saving to the database.
 export interface ParsedBudgetItem {
@@ -36,7 +25,7 @@ export interface ParsedBudgetItem {
   note: string | null;
   sourceRow: number; // row number in the Excel file (1-based)
 }
- 
+
 export interface ParseResult {
   items: ParsedBudgetItem[];
   warnings: string[];
