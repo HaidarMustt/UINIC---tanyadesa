@@ -1,0 +1,99 @@
+// A small client for any OpenAI-compatible chat API (Groq, OpenRouter, OpenAI, ...).
+// Switching provider only means changing the AI_* variables in .env.
+
+const REQUEST_TIMEOUT_MS = 20_000;
+const MAX_RETRY_WAIT_MS = 10_000;
+
+export interface ChatClient {
+  completeJson(system: string, user: string, schemaName: string, jsonSchema: unknown): Promise<unknown>;
+  completeText(prompt: string): Promise<string>;
+}
+
+interface ChatConfig {
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+  reasoningEffort?: string; // "low" | "medium" | "high", for reasoning models
+}
+
+function readConfigFromEnv(): ChatConfig {
+  const { AI_BASE_URL, AI_MODEL, AI_API_KEY, AI_REASONING_EFFORT } = process.env;
+  if (!AI_BASE_URL || !AI_MODEL || !AI_API_KEY) {
+    throw new Error("AI_BASE_URL, AI_MODEL, dan AI_API_KEY harus diisi di .env");
+  }
+  return {
+    baseUrl: AI_BASE_URL,
+    model: AI_MODEL,
+    apiKey: AI_API_KEY,
+    reasoningEffort: AI_REASONING_EFFORT || undefined,
+  };
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// How long the provider asks us to wait after a 429 (rate limit), capped.
+function retryDelayMs(response: Response, body: string): number {
+  const header = Number(response.headers.get("retry-after"));
+  if (Number.isFinite(header) && header > 0) return Math.min(header * 1000, MAX_RETRY_WAIT_MS);
+  const match = body.match(/try again in ([\d.]+)s/i);
+  if (match) return Math.min(Math.ceil(Number(match[1]) * 1000), MAX_RETRY_WAIT_MS);
+  return 3_000;
+}
+
+export function createChatClient(config: ChatConfig = readConfigFromEnv()): ChatClient {
+  async function send(body: Record<string, unknown>): Promise<Response> {
+    return fetch(`${config.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model,
+        ...(config.reasoningEffort ? { reasoning_effort: config.reasoningEffort } : {}),
+        ...body,
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  }
+
+  async function chat(body: Record<string, unknown>): Promise<string> {
+    let response = await send(body);
+
+    // Rate limited: wait as long as the provider asks (max 10 s), then try once more.
+    if (response.status === 429) {
+      await sleep(retryDelayMs(response, await response.text()));
+      response = await send(body);
+    }
+
+    if (!response.ok) {
+      // The body may describe the problem; it never contains our API key.
+      throw new Error(`AI request failed (${response.status}): ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") throw new Error("AI response has no text content.");
+    return content;
+  }
+
+  return {
+    async completeJson(system, user, schemaName, jsonSchema) {
+      const content = await chat({
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: schemaName, strict: true, schema: jsonSchema },
+        },
+      });
+      return JSON.parse(content);
+    },
+
+    completeText(prompt) {
+      return chat({ messages: [{ role: "user", content: prompt }] });
+    },
+  };
+}

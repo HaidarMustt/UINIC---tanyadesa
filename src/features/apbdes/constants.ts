@@ -1,4 +1,4 @@
-import type { FundSource } from "./types";
+import type { ActivityStatus, FundSource } from "./types";
 
 export const SECTOR_NAMES: Record<number, string> = {
   1: "Penyelenggaraan Pemerintahan Desa",
@@ -17,4 +17,12 @@ export const FUND_SOURCE_NAMES: Record<FundSource, string> = {
   BANKEU_PROV: "Bantuan Keuangan Provinsi",
   SILPA: "Sisa Lebih Perhitungan Anggaran",
   OTHER: "Lainnya",
+};
+
+export const STATUS_NAMES: Record<ActivityStatus, string> = {
+  NOT_STARTED: "belum dimulai",
+  IN_PROGRESS: "sedang berjalan",
+  COMPLETED: "sudah selesai",
+  PARTIALLY_RECEIVED: "diterima sebagian",
+  RECEIVED: "sudah diterima",
 };
