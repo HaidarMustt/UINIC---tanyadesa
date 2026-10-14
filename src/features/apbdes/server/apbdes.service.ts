@@ -55,7 +55,9 @@ export async function importApbdes(input: ImportApbdesInput): Promise<ImportApbd
 
   const balance = checkBalance(items);
   if (!balance.isBalanced) {
-    warnings.push(`Anggaran tidak seimbang: selisih Rp${balance.difference.toLocaleString("id-ID")}.`);
+    warnings.push(
+      `Anggaran tidak seimbang: selisih Rp${balance.difference.toLocaleString("id-ID")}.`,
+    );
   }
 
   const version = await getNextDocumentVersion(desa.id, input.fiscalYear);

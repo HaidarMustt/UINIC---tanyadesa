@@ -1,19 +1,19 @@
 import { DesaSlugSchema } from "@/features/apbdes/schemas";
 import { getPublishedSummary } from "@/features/apbdes/server/apbdes.service";
+import { NotFoundError, ValidationError } from "@/lib/errors";
+import { withErrorHandling } from "@/lib/http";
+
+type Context = { params: Promise<{ slug: string }> };
 
 // GET /api/desa/sukamaju/summary
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export const GET = withErrorHandling(async (_request: Request, { params }: Context) => {
   const { slug } = await params;
 
   const parsed = DesaSlugSchema.safeParse(slug);
-  if (!parsed.success) {
-    return Response.json({ error: parsed.error.issues[0].message }, { status: 400 });
-  }
+  if (!parsed.success) throw new ValidationError(parsed.error.issues[0].message);
 
   const summary = await getPublishedSummary(parsed.data);
-  if (!summary) {
-    return Response.json({ error: "APBDes untuk desa ini belum tersedia." }, { status: 404 });
-  }
+  if (!summary) throw new NotFoundError("APBDes untuk desa ini belum tersedia.");
 
   return Response.json(summary);
-}
+});

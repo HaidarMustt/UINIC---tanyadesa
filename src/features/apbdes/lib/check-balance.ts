@@ -21,7 +21,7 @@ export function checkBalance(items: ParsedBudgetItem[]): BalanceResult {
   const totalExpenditure = sumBudget(items, "EXPENDITURE");
 
   // TODO 1: netFinancing = penerimaan pembiayaan − pengeluaran pembiayaan
-  const netFinancing = 
+  const netFinancing =
     sumBudget(items, "FINANCING_RECEIPT") - sumBudget(items, "FINANCING_EXPENDITURE");
 
   // TODO 2: difference = pendapatan + pembiayaan netto − belanja
