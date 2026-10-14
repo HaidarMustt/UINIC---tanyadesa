@@ -91,3 +91,24 @@ export function findPublishedDocument(desaSlug: string) {
     },
   });
 }
+
+// All desa that have at least one published APBDes, for the open data index.
+export function findDesasWithPublishedDocuments() {
+  return db.desa.findMany({
+    where: { documents: { some: { status: "PUBLISHED" } } },
+    orderBy: { name: "asc" },
+    select: {
+      slug: true,
+      name: true,
+      district: true,
+      regency: true,
+      province: true,
+      isSimulation: true,
+      documents: {
+        where: { status: "PUBLISHED" },
+        select: { fiscalYear: true },
+        orderBy: { fiscalYear: "desc" },
+      },
+    },
+  });
+}

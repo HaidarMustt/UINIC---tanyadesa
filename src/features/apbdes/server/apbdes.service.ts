@@ -5,9 +5,11 @@ import { FUND_SOURCE_NAMES, SECTOR_NAMES } from "../constants";
 import { checkBalance, type BalanceResult } from "../lib/check-balance";
 import { parseApbdesExcel } from "../lib/parse-excel";
 import { summarize, type GroupTotal } from "../lib/summarize";
+import type { ItemsQuery } from "../schemas";
 import type { FundSource, ParsedBudgetItem } from "../types";
 import {
   createDocumentWithItems,
+  findDesasWithPublishedDocuments,
   findDesaWithDusunsBySlug,
   findPublishedDocument,
   getNextDocumentVersion,
@@ -55,9 +57,7 @@ export async function importApbdes(input: ImportApbdesInput): Promise<ImportApbd
 
   const balance = checkBalance(items);
   if (!balance.isBalanced) {
-    warnings.push(
-      `Anggaran tidak seimbang: selisih Rp${balance.difference.toLocaleString("id-ID")}.`,
-    );
+    warnings.push(`Anggaran tidak seimbang: selisih Rp${balance.difference.toLocaleString("id-ID")}.`);
   }
 
   const version = await getNextDocumentVersion(desa.id, input.fiscalYear);
@@ -86,7 +86,9 @@ export function publishApbdes(documentId: string, publisherId: string) {
 
 type LabeledGroup = GroupTotal & { label: string };
 
-export interface PublishedSummary {
+type PublishedDocument = NonNullable<Awaited<ReturnType<typeof findPublishedDocument>>>;
+
+interface DocumentInfo {
   desa: { slug: string; name: string; isSimulation: boolean };
   document: {
     title: string;
@@ -95,20 +97,12 @@ export interface PublishedSummary {
     realizedAsOf: Date | null;
     publishedAt: Date | null;
   };
-  balance: BalanceResult;
-  bySector: LabeledGroup[];
-  byDusun: LabeledGroup[];
-  byFundSource: LabeledGroup[];
 }
 
-// Returns null when the desa has no published APBDes yet.
-export async function getPublishedSummary(desaSlug: string): Promise<PublishedSummary | null> {
-  const document = await findPublishedDocument(desaSlug);
-  if (!document) return null;
-
-  // Database rows -> the same shape the pure functions already understand.
-  // BigInt becomes number here, because JSON cannot carry BigInt.
-  const items: ParsedBudgetItem[] = document.items.map((item) => ({
+// Database rows -> the same shape the pure functions already understand.
+// BigInt becomes number here, because JSON cannot carry BigInt.
+function toPlainItems(rows: PublishedDocument["items"]): ParsedBudgetItem[] {
+  return rows.map((item) => ({
     accountCode: item.accountCode,
     entryType: item.entryType,
     sectorCode: item.sectorCode,
@@ -122,9 +116,9 @@ export async function getPublishedSummary(desaSlug: string): Promise<PublishedSu
     note: item.note,
     sourceRow: item.sourceRow ?? 0,
   }));
+}
 
-  const summary = summarize(items);
-
+function describeDocument(document: PublishedDocument): DocumentInfo {
   return {
     desa: {
       slug: document.desa.slug,
@@ -138,6 +132,26 @@ export async function getPublishedSummary(desaSlug: string): Promise<PublishedSu
       realizedAsOf: document.realizedAsOf,
       publishedAt: document.publishedAt,
     },
+  };
+}
+
+export interface PublishedSummary extends DocumentInfo {
+  balance: BalanceResult;
+  bySector: LabeledGroup[];
+  byDusun: LabeledGroup[];
+  byFundSource: LabeledGroup[];
+}
+
+// Returns null when the desa has no published APBDes yet.
+export async function getPublishedSummary(desaSlug: string): Promise<PublishedSummary | null> {
+  const document = await findPublishedDocument(desaSlug);
+  if (!document) return null;
+
+  const items = toPlainItems(document.items);
+  const summary = summarize(items);
+
+  return {
+    ...describeDocument(document),
     balance: checkBalance(items),
     bySector: summary.bySector.map((group) => ({
       ...group,
@@ -149,4 +163,77 @@ export async function getPublishedSummary(desaSlug: string): Promise<PublishedSu
       label: FUND_SOURCE_NAMES[group.key as FundSource] ?? group.key,
     })),
   };
+}
+
+// ---------------------------------------------------------------- open data
+
+export async function listOpenDesa() {
+  const rows = await findDesasWithPublishedDocuments();
+  return rows.map(({ documents, ...desa }) => ({
+    ...desa,
+    fiscalYears: documents.map((document) => document.fiscalYear),
+  }));
+}
+
+export interface PublicBudgetItem {
+  accountCode: string;
+  entryType: ParsedBudgetItem["entryType"];
+  sectorCode: number | null;
+  sectorName: string | null;
+  description: string;
+  dusun: string | null;
+  rt: string | null;
+  fundSource: FundSource;
+  fundSourceName: string;
+  budget: number;
+  realized: number;
+  realizationRate: number;
+  status: ParsedBudgetItem["status"];
+  note: string | null;
+}
+
+export interface PublishedItems extends DocumentInfo {
+  count: number;
+  items: PublicBudgetItem[];
+}
+
+function matchesFilter(item: ParsedBudgetItem, query: ItemsQuery): boolean {
+  if (query.entryType && item.entryType !== query.entryType) return false;
+  if (query.sector && item.sectorCode !== query.sector) return false;
+  if (query.dusun && item.dusun?.toLowerCase() !== query.dusun.toLowerCase()) return false;
+  return true;
+}
+
+function toPublicItem(item: ParsedBudgetItem): PublicBudgetItem {
+  return {
+    accountCode: item.accountCode,
+    entryType: item.entryType,
+    sectorCode: item.sectorCode,
+    sectorName: item.sectorCode === null ? null : (SECTOR_NAMES[item.sectorCode] ?? null),
+    description: item.description,
+    dusun: item.dusun,
+    rt: item.rt,
+    fundSource: item.fundSource,
+    fundSourceName: FUND_SOURCE_NAMES[item.fundSource],
+    budget: item.budget,
+    realized: item.realized,
+    realizationRate: item.budget === 0 ? 0 : item.realized / item.budget,
+    status: item.status,
+    note: item.note,
+  };
+}
+
+// Returns null when the desa has no published APBDes yet.
+export async function getPublishedItems(
+  desaSlug: string,
+  query: ItemsQuery,
+): Promise<PublishedItems | null> {
+  const document = await findPublishedDocument(desaSlug);
+  if (!document) return null;
+
+  const items = toPlainItems(document.items)
+    .filter((item) => matchesFilter(item, query))
+    .map(toPublicItem);
+
+  return { ...describeDocument(document), count: items.length, items };
 }

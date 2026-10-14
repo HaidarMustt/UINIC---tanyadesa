@@ -1,11 +1,11 @@
 import { DesaSlugSchema } from "@/features/apbdes/schemas";
 import { getPublishedSummary } from "@/features/apbdes/server/apbdes.service";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import { withErrorHandling } from "@/lib/http";
+import { openDataJson, withErrorHandling } from "@/lib/http";
 
 type Context = { params: Promise<{ slug: string }> };
 
-// GET /api/desa/sukamaju/summary
+// GET /api/v1/desa/sukamaju/apbdes/summary
 export const GET = withErrorHandling(async (_request: Request, { params }: Context) => {
   const { slug } = await params;
 
@@ -15,5 +15,5 @@ export const GET = withErrorHandling(async (_request: Request, { params }: Conte
   const summary = await getPublishedSummary(parsed.data);
   if (!summary) throw new NotFoundError("APBDes untuk desa ini belum tersedia.");
 
-  return Response.json(summary);
+  return openDataJson(summary);
 });

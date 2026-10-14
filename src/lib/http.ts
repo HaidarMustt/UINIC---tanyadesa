@@ -44,3 +44,14 @@ export function withErrorHandling<Context>(handler: RouteHandler<Context>): Rout
     }
   };
 }
+
+// Open data responses: readable from any website (CORS) and cacheable,
+// because a published APBDes rarely changes.
+export const OPEN_DATA_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+};
+
+export function openDataJson(data: unknown): Response {
+  return Response.json(data, { headers: OPEN_DATA_HEADERS });
+}

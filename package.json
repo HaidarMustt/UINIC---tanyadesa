@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
