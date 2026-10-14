@@ -237,3 +237,33 @@ export async function getPublishedItems(
 
   return { ...describeDocument(document), count: items.length, items };
 }
+
+// ---------------------------------------------------------------- dataset for other features
+
+export interface PublishedDataset {
+  desaId: string;
+  desaName: string;
+  isSimulation: boolean;
+  documentId: string;
+  fiscalYear: number;
+  dusuns: string[];
+  items: ParsedBudgetItem[];
+  itemIdByAccountCode: Map<string, string>;
+}
+
+// Everything the Q&A feature needs about a desa's published APBDes.
+export async function getPublishedDataset(desaSlug: string): Promise<PublishedDataset | null> {
+  const document = await findPublishedDocument(desaSlug);
+  if (!document) return null;
+
+  return {
+    desaId: document.desaId,
+    desaName: document.desa.name,
+    isSimulation: document.desa.isSimulation,
+    documentId: document.id,
+    fiscalYear: document.fiscalYear,
+    dusuns: document.desa.dusuns.map((dusun) => dusun.name),
+    items: toPlainItems(document.items),
+    itemIdByAccountCode: new Map(document.items.map((item) => [item.accountCode, item.id])),
+  };
+}

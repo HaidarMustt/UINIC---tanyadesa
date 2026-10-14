@@ -24,3 +24,17 @@ export class ValidationError extends AppError {
     this.name = "ValidationError";
   }
 }
+
+export class RateLimitError extends AppError {
+  constructor(message: string) {
+    super(429, message);
+    this.name = "RateLimitError";
+  }
+}
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message: string) {
+    super(503, message);
+    this.name = "ServiceUnavailableError";
+  }
+}

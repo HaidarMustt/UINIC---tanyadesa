@@ -86,7 +86,7 @@ export function findPublishedDocument(desaSlug: string) {
     where: { status: "PUBLISHED", desa: { slug: desaSlug } },
     orderBy: [{ fiscalYear: "desc" }, { version: "desc" }],
     include: {
-      desa: true,
+      desa: { include: { dusuns: { select: { name: true } } } },
       items: { include: { dusun: true }, orderBy: { sortOrder: "asc" } },
     },
   });
