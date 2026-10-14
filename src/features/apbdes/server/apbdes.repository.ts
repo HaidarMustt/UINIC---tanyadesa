@@ -79,3 +79,15 @@ export function publishDocument(documentId: string, publisherId: string) {
     });
   });
 }
+
+// The latest published APBDes of a desa, with all rows and their dusun.
+export function findPublishedDocument(desaSlug: string) {
+  return db.apbdesDocument.findFirst({
+    where: { status: "PUBLISHED", desa: { slug: desaSlug } },
+    orderBy: [{ fiscalYear: "desc" }, { version: "desc" }],
+    include: {
+      desa: true,
+      items: { include: { dusun: true }, orderBy: { sortOrder: "asc" } },
+    },
+  });
+}
