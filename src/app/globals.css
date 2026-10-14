@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
+/*
+  Palette from the world of a village office: cool document paper, the blue ink
+  of an official stamp, and turmeric yellow (kunyit) as the warm highlight.
+  Five sector colors are used for the budget ribbon and its legend.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --paper: #f3f4f7;
+  --surface: #ffffff;
+  --ink: #1a2140;
+  --muted: #586079;
+  --line: #d8dbe5;
+  --stamp: #2f43a3;
+  --kunyit: #e3a21a;
+  --kunyit-soft: #fdf1d3;
+  --kunyit-ink: #6a4a00;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --sector-1: #2f43a3;
+  --sector-2: #e3a21a;
+  --sector-3: #1d8a7b;
+  --sector-4: #b9533a;
+  --sector-5: #7a4a9c;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #12152a;
+    --surface: #1a1e36;
+    --ink: #eceef6;
+    --muted: #a4aac2;
+    --line: #2e3452;
+    --stamp: #8c9cf0;
+    --kunyit: #f0b941;
+    --kunyit-soft: #3a2e10;
+    --kunyit-ink: #f6d68a;
+
+    --sector-1: #8c9cf0;
+    --sector-2: #f0b941;
+    --sector-3: #4cc2b0;
+    --sector-4: #e8846a;
+    --sector-5: #b98ad6;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-stamp: var(--stamp);
+  --color-kunyit: var(--kunyit);
+  --color-kunyit-soft: var(--kunyit-soft);
+  --color-kunyit-ink: var(--kunyit-ink);
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum";
+}
+
+:focus-visible {
+  outline: 3px solid var(--kunyit);
+  outline-offset: 2px;
+}
+
+/* The one animated moment: the budget ribbon fills in once when the page opens. */
+@keyframes ribbon-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.ribbon-fill {
+  transform-origin: left;
+  animation: ribbon-fill 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-fill { animation: none; }
 }
