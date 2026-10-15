@@ -27,7 +27,7 @@ async function loadSummary(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const summary = await loadSummary(slug);
-  return { title: `APBDes ${summary.document.fiscalYear} Desa ${summary.desa.name}` };
+  return { title: `APBDes ${summary.document.fiscalYear} ${summary.desa.name}` };
 }
 
 export default async function DesaSummaryPage({ params }: PageProps) {
@@ -40,7 +40,7 @@ export default async function DesaSummaryPage({ params }: PageProps) {
         <span className="text-lg font-extrabold tracking-tight">
           Tanya<span className="text-stamp">Desa</span>
         </span>
-        <span className="text-sm text-muted">Desa {desa.name}</span>
+        <span className="text-muted text-sm">{desa.name}</span>
       </header>
 
       <main className="space-y-10 pt-4">
@@ -70,19 +70,27 @@ export default async function DesaSummaryPage({ params }: PageProps) {
           realizedLabel="diterima"
         />
 
-        <footer className="space-y-2 border-t border-line pt-6 text-sm text-muted">
+        <footer className="border-line text-muted space-y-2 border-t pt-6 text-sm">
           <p>
             {document.title} versi {document.version}
             {document.publishedAt && <>, diterbitkan {formatDate(document.publishedAt)}</>}.
-            {document.realizedAsOf && <> Realisasi dihitung per {formatDate(document.realizedAsOf)}.</>}
+            {document.realizedAsOf && (
+              <> Realisasi dihitung per {formatDate(document.realizedAsOf)}.</>
+            )}
           </p>
           <p>
             Data ini terbuka. Unduh rinciannya sebagai{" "}
-            <a className="font-medium text-stamp underline" href={`/api/v1/desa/${desa.slug}/apbdes?format=csv`}>
+            <a
+              className="text-stamp font-medium underline"
+              href={`/api/v1/desa/${desa.slug}/apbdes?format=csv`}
+            >
               CSV
             </a>{" "}
             atau{" "}
-            <a className="font-medium text-stamp underline" href={`/api/v1/desa/${desa.slug}/apbdes`}>
+            <a
+              className="text-stamp font-medium underline"
+              href={`/api/v1/desa/${desa.slug}/apbdes`}
+            >
               JSON
             </a>
             .

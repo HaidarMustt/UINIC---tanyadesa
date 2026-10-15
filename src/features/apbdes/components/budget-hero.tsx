@@ -21,10 +21,10 @@ export function BudgetHero({ desaName, fiscalYear, totalExpenditure, sectors }: 
   return (
     <section aria-labelledby="hero-heading" className="space-y-6">
       <div className="space-y-2">
-        <h1 id="hero-heading" className="text-lg font-semibold text-muted sm:text-xl">
-          Tahun {fiscalYear}, Desa {desaName} membelanjakan
+        <h1 id="hero-heading" className="text-muted text-lg font-semibold sm:text-xl">
+          Tahun {fiscalYear}, {desaName} membelanjakan
         </h1>
-        <p className="text-[2.5rem] leading-none font-extrabold tracking-tight text-stamp sm:text-6xl">
+        <p className="text-stamp text-[2.5rem] leading-none font-extrabold tracking-tight sm:text-6xl">
           {formatRupiah(totalExpenditure)}
         </p>
         <p className="text-muted">
@@ -39,7 +39,7 @@ export function BudgetHero({ desaName, fiscalYear, totalExpenditure, sectors }: 
           <div
             key={sector.key}
             style={{ width: `${sector.share * 100}%`, background: sectorColor(sector.key) }}
-            className="h-full border-r-2 border-paper last:border-r-0"
+            className="border-paper h-full border-r-2 last:border-r-0"
           />
         ))}
       </div>
@@ -54,10 +54,12 @@ export function BudgetHero({ desaName, fiscalYear, totalExpenditure, sectors }: 
             />
             <div className="min-w-0">
               <p className="font-semibold">
-                <span className="sr-only">Bidang {sector.key}, {sector.label}: </span>
+                <span className="sr-only">
+                  Bidang {sector.key}, {sector.label}:{" "}
+                </span>
                 <span aria-hidden="true">{SECTOR_SHORT_NAMES[sector.key] ?? sector.label}</span>
               </p>
-              <p className="text-sm text-muted">
+              <p className="text-muted text-sm">
                 {formatRupiah(sector.budget)}, {formatPercent(sector.share * 100)} dari belanja
               </p>
             </div>
