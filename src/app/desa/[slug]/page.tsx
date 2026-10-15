@@ -3,6 +3,8 @@
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
 import { BreakdownList } from "@/features/apbdes/components/breakdown-list";
 import { BudgetHero } from "@/features/apbdes/components/budget-hero";
 import { MoneyFlow } from "@/features/apbdes/components/money-flow";
@@ -36,12 +38,7 @@ export default async function DesaSummaryPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
-      <header className="flex items-center justify-between py-5">
-        <span className="text-lg font-extrabold tracking-tight">
-          Tanya<span className="text-stamp">Desa</span>
-        </span>
-        <span className="text-muted text-sm">{desa.name}</span>
-      </header>
+      <SiteHeader desaName={desa.name} slug={desa.slug} current="summary" />
 
       <main className="space-y-10 pt-4">
         {desa.isSimulation && <SimulationNotice />}
@@ -52,6 +49,21 @@ export default async function DesaSummaryPage({ params }: PageProps) {
           totalExpenditure={balance.totalExpenditure}
           sectors={bySector}
         />
+
+        <Link
+          href={`/desa/${desa.slug}/tanya`}
+          className="flex items-center justify-between gap-4 rounded-2xl bg-stamp p-5 text-surface hover:opacity-95 sm:p-6"
+        >
+          <span>
+            <span className="block text-lg font-bold">Ada yang ingin ditanyakan?</span>
+            <span className="block text-sm opacity-85">
+              Misalnya &ldquo;Dana jalan RT 3 berapa?&rdquo; Jawabannya lengkap dengan kode rekening.
+            </span>
+          </span>
+          <span className="shrink-0 rounded-full bg-surface px-4 py-2 text-sm font-bold text-stamp">
+            Tanya
+          </span>
+        </Link>
 
         <MoneyFlow balance={balance} />
 
@@ -70,27 +82,19 @@ export default async function DesaSummaryPage({ params }: PageProps) {
           realizedLabel="diterima"
         />
 
-        <footer className="border-line text-muted space-y-2 border-t pt-6 text-sm">
+        <footer className="space-y-2 border-t border-line pt-6 text-sm text-muted">
           <p>
             {document.title} versi {document.version}
             {document.publishedAt && <>, diterbitkan {formatDate(document.publishedAt)}</>}.
-            {document.realizedAsOf && (
-              <> Realisasi dihitung per {formatDate(document.realizedAsOf)}.</>
-            )}
+            {document.realizedAsOf && <> Realisasi dihitung per {formatDate(document.realizedAsOf)}.</>}
           </p>
           <p>
             Data ini terbuka. Unduh rinciannya sebagai{" "}
-            <a
-              className="text-stamp font-medium underline"
-              href={`/api/v1/desa/${desa.slug}/apbdes?format=csv`}
-            >
+            <a className="font-medium text-stamp underline" href={`/api/v1/desa/${desa.slug}/apbdes?format=csv`}>
               CSV
             </a>{" "}
             atau{" "}
-            <a
-              className="text-stamp font-medium underline"
-              href={`/api/v1/desa/${desa.slug}/apbdes`}
-            >
+            <a className="font-medium text-stamp underline" href={`/api/v1/desa/${desa.slug}/apbdes`}>
               JSON
             </a>
             .

@@ -3,7 +3,7 @@ import Link from "next/link";
 interface SiteHeaderProps {
   desaName: string;
   slug: string;
-  current: "summary" | "ask";
+  current: "summary" | "ask" | "aspiration";
 }
 
 // Top bar shared by the public pages of one desa.
@@ -11,6 +11,7 @@ export function SiteHeader({ desaName, slug, current }: SiteHeaderProps) {
   const links = [
     { key: "summary", href: `/desa/${slug}`, label: "Ringkasan" },
     { key: "ask", href: `/desa/${slug}/tanya`, label: "Tanya" },
+    { key: "aspiration", href: `/desa/${slug}/aspirasi`, label: "Aspirasi" },
   ] as const;
 
   return (
@@ -32,8 +33,8 @@ export function SiteHeader({ desaName, slug, current }: SiteHeaderProps) {
                   aria-current={isCurrent ? "page" : undefined}
                   className={
                     isCurrent
-                      ? "block rounded-full bg-stamp px-4 py-1.5 text-surface"
-                      : "block rounded-full px-4 py-1.5 text-muted hover:text-ink"
+                      ? "block rounded-full bg-stamp px-3.5 py-1.5 text-surface sm:px-4"
+                      : "block rounded-full px-3.5 py-1.5 text-muted hover:text-ink sm:px-4"
                   }
                 >
                   {link.label}

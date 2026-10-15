@@ -286,6 +286,9 @@ model Aspiration {
   categoryId          String? // set by AI, editable by operator
   aiConfidence        Float? // 0 to 1, low = needs manual check
   relatedBudgetItemId String? // APBDes activity discussed, e.g. PJU Tegalsari
+  trackingCode        String           @unique // short secret code; the resident's link to follow up
+  sessionId           String? // anonymous browser id, for rate limiting
+  forwardedTo         String? // e.g. "Kaur Perencanaan", "BPD"
   status              AspirationStatus @default(NEW)
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -298,6 +301,7 @@ model Aspiration {
 
   @@index([desaId, status])
   @@index([desaId, categoryId])
+  @@index([sessionId, createdAt])
   @@map("aspirations")
 }
 
