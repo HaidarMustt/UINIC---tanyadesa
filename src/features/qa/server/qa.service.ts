@@ -3,6 +3,7 @@
 import { getPublishedDataset } from "@/features/apbdes/server/apbdes.service";
 import { NotFoundError, RateLimitError, ServiceUnavailableError } from "@/lib/errors";
 import { ask } from "../lib/ask";
+import type { QuestionAnswer } from "../types";
 import { checkQuestionLimits } from "../lib/rate-limit";
 import { createQaAiProvider } from "./qa-ai";
 import { countDesaQuestionsSince, countSessionQuestionsSince, saveQuestion } from "./qa.repository";
@@ -15,13 +16,7 @@ function startOfToday(): Date {
   return today;
 }
 
-export interface QuestionAnswer {
-  id: string;
-  status: "ANSWERED" | "NOT_FOUND" | "REFUSED";
-  answer: string;
-  sources: { accountCode: string; description: string }[];
-  isSimulation: boolean;
-}
+export type { QuestionAnswer };
 
 export async function askQuestion(
   desaSlug: string,

@@ -6,6 +6,7 @@
 // and replaced by a fake one in tests.
 
 import type { ParsedBudgetItem } from "@/features/apbdes/types";
+import { MAX_QUESTION_LENGTH } from "../constants";
 import { calculate } from "./calculate";
 import {
   buildRewritePrompt,
@@ -28,7 +29,6 @@ export interface AskResult extends Answer {
   usedAiWording: boolean; // true = the sentence was written by the AI and passed the guard
 }
 
-export const MAX_QUESTION_LENGTH = 500;
 
 export async function ask(
   question: string,

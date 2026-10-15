@@ -1,0 +1,175 @@
+"use client";
+
+// The interactive part of the Tanya page. It runs in the browser because it needs
+// state (the conversation) and events (typing, submitting).
+
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { EXAMPLE_QUESTIONS, MAX_QUESTION_LENGTH, MIN_QUESTION_LENGTH } from "../constants";
+import type { QuestionAnswer } from "../types";
+import { AnswerCard } from "./answer-card";
+
+type Turn =
+  | { id: number; question: string; state: "loading" }
+  | { id: number; question: string; state: "done"; result: QuestionAnswer }
+  | { id: number; question: string; state: "error"; message: string };
+
+interface AskPanelProps {
+  slug: string;
+}
+
+// Calls our own API. Every failure becomes a sentence a resident can act on.
+async function postQuestion(slug: string, question: string): Promise<QuestionAnswer> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/v1/desa/${slug}/questions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+  } catch {
+    throw new Error("Tidak bisa terhubung. Periksa koneksi internet, lalu coba lagi.");
+  }
+
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(body?.error ?? "Terjadi kesalahan. Coba lagi beberapa saat lagi.");
+  }
+  return body as QuestionAnswer;
+}
+
+export function AskPanel({ slug }: AskPanelProps) {
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [draft, setDraft] = useState("");
+  const nextId = useRef(1);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const isLoading = turns.some((turn) => turn.state === "loading");
+  const trimmed = draft.trim();
+  const canSubmit = !isLoading && trimmed.length >= MIN_QUESTION_LENGTH;
+
+  // Keep the newest answer in view.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [turns]);
+
+  async function submit(question: string) {
+    const text = question.trim();
+    if (isLoading || text.length < MIN_QUESTION_LENGTH) return;
+
+    const id = nextId.current++;
+    setTurns((current) => [...current, { id, question: text, state: "loading" }]);
+    setDraft("");
+
+    try {
+      const result = await postQuestion(slug, text);
+      setTurns((current) =>
+        current.map((turn) => (turn.id === id ? { id, question: text, state: "done", result } : turn)),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Terjadi kesalahan.";
+      setTurns((current) =>
+        current.map((turn) => (turn.id === id ? { id, question: text, state: "error", message } : turn)),
+      );
+    } finally {
+      inputRef.current?.focus();
+    }
+  }
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    submit(draft);
+  }
+
+  // Enter sends, Shift+Enter makes a new line (like WhatsApp on a laptop).
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submit(draft);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {turns.length === 0 && (
+        <section aria-labelledby="examples-heading">
+          <h2 id="examples-heading" className="font-semibold">
+            Belum tahu mau tanya apa? Coba salah satu:
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {EXAMPLE_QUESTIONS.map((example) => (
+              <li key={example}>
+                <button
+                  type="button"
+                  onClick={() => submit(example)}
+                  className="rounded-full border border-line bg-surface px-4 py-2 text-sm hover:border-stamp hover:text-stamp"
+                >
+                  {example}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Screen readers announce each new answer without the user moving focus. */}
+      <ol aria-live="polite" aria-busy={isLoading} className="space-y-6">
+        {turns.map((turn) => (
+          <li key={turn.id} className="space-y-3">
+            <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-stamp px-4 py-2.5 text-surface">
+              <span className="sr-only">Pertanyaan: </span>
+              {turn.question}
+            </p>
+
+            {turn.state === "loading" && (
+              <p className="flex items-center gap-2 text-muted">
+                <span aria-hidden="true" className="size-2 animate-pulse rounded-full bg-kunyit" />
+                Mencari di APBDes…
+              </p>
+            )}
+            {turn.state === "done" && <AnswerCard result={turn.result} />}
+            {turn.state === "error" && (
+              <p role="alert" className="rounded-2xl bg-kunyit-soft p-4 text-kunyit-ink">
+                {turn.message}
+              </p>
+            )}
+          </li>
+        ))}
+      </ol>
+      <div ref={bottomRef} />
+
+      <form
+        onSubmit={handleSubmit}
+        className="sticky bottom-3 rounded-2xl border border-line bg-surface p-3 shadow-lg shadow-ink/5"
+      >
+        <label htmlFor="question" className="sr-only">
+          Tulis pertanyaan tentang anggaran desa
+        </label>
+        <textarea
+          id="question"
+          ref={inputRef}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={handleKeyDown}
+          rows={2}
+          maxLength={MAX_QUESTION_LENGTH}
+          placeholder="Contoh: Berapa dana untuk posyandu?"
+          className="w-full resize-none bg-transparent px-2 py-1 placeholder:text-muted focus:outline-none"
+        />
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <span className="px-2 text-xs text-muted" aria-live="polite">
+            {draft.length > MAX_QUESTION_LENGTH - 50 &&
+              `${MAX_QUESTION_LENGTH - draft.length} karakter lagi`}
+          </span>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="rounded-full bg-stamp px-5 py-2 font-semibold text-surface disabled:opacity-40"
+          >
+            {isLoading ? "Menunggu…" : "Tanya"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
