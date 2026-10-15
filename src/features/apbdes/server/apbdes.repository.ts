@@ -112,3 +112,35 @@ export function findDesasWithPublishedDocuments() {
     },
   });
 }
+
+// ---------------------------------------------------------------- panel
+
+// Every version of every year for one desa, newest first, for the panel history.
+export function findDocumentsForDesa(desaId: string) {
+  return db.apbdesDocument.findMany({
+    where: { desaId },
+    orderBy: [{ fiscalYear: "desc" }, { version: "desc" }],
+    select: {
+      id: true,
+      title: true,
+      fiscalYear: true,
+      version: true,
+      status: true,
+      fileName: true,
+      createdAt: true,
+      publishedAt: true,
+      uploader: { select: { name: true } },
+      _count: { select: { items: true } },
+    },
+  });
+}
+
+// Scoped by desa on purpose: an operator of desa A must never touch a document
+// of desa B, even if they guess its id.
+export function findDocumentForDesa(documentId: string, desaId: string) {
+  return db.apbdesDocument.findFirst({ where: { id: documentId, desaId } });
+}
+
+export function deleteDocument(documentId: string) {
+  return db.apbdesDocument.delete({ where: { id: documentId } }); // rows go with it (cascade)
+}

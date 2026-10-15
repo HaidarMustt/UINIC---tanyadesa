@@ -1,6 +1,7 @@
 // Business flow for APBDes: parse the file, check it, save it, publish it.
 // The service never reads HTTP requests and never writes Prisma queries itself.
 
+import { NotFoundError, ValidationError } from "@/lib/errors";
 import { FUND_SOURCE_NAMES, SECTOR_NAMES } from "../constants";
 import { checkBalance, type BalanceResult } from "../lib/check-balance";
 import { parseApbdesExcel } from "../lib/parse-excel";
@@ -38,10 +39,26 @@ export interface ImportApbdesResult {
 
 export async function importApbdes(input: ImportApbdesInput): Promise<ImportApbdesResult> {
   const desa = await findDesaWithDusunsBySlug(input.desaSlug);
-  if (!desa) throw new Error(`Desa dengan slug "${input.desaSlug}" tidak ditemukan.`);
+  if (!desa) throw new NotFoundError(`Desa dengan slug "${input.desaSlug}" tidak ditemukan.`);
 
-  const { items, warnings } = parseApbdesExcel(input.file);
-  if (items.length === 0) throw new Error("File tidak berisi baris anggaran yang bisa dibaca.");
+  // The parser explains problems in plain Indonesian (e.g. a missing column),
+  // so its messages are safe to show to the operator.
+  let parsed;
+  try {
+    parsed = parseApbdesExcel(input.file);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "format tidak dikenali";
+    throw new ValidationError(`File tidak bisa dibaca: ${reason}`);
+  }
+  const { items, warnings } = parsed;
+  if (items.length === 0) throw new ValidationError("File tidak berisi baris anggaran yang bisa dibaca.");
+
+  // The database allows each account code once per document, so stop here with a clear message.
+  const codes = items.map((item) => item.accountCode);
+  const duplicates = [...new Set(codes.filter((code, index) => codes.indexOf(code) !== index))];
+  if (duplicates.length > 0) {
+    throw new ValidationError(`Kode rekening dobel: ${duplicates.join(", ")}. Perbaiki di Excel lalu unggah ulang.`);
+  }
 
   // Turn dusun names from the Excel file into database ids.
   const dusunIdByName = new Map(desa.dusuns.map((dusun) => [dusun.name.toLowerCase(), dusun.id]));

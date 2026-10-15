@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getPublishedSummary } from "@/features/apbdes/server/apbdes.service";
 import { requireUser } from "@/features/auth/server/auth-session";
 import { formatDate } from "@/lib/format";
@@ -44,9 +45,9 @@ export default async function PanelHomePage({ searchParams }: PageProps) {
         ) : (
           <p className="text-muted">Belum ada APBDes yang diterbitkan.</p>
         )}
-        <span className="rounded-full border border-line px-5 py-2.5 text-sm font-bold text-muted">
-          Unggah versi baru (pelajaran 8b)
-        </span>
+        <Link href="/panel/apbdes" className="rounded-full bg-stamp px-5 py-2.5 font-bold text-surface">
+          {user.role === "OPERATOR" ? "Unggah versi baru" : "Lihat riwayat"}
+        </Link>
       </section>
     </div>
   );
