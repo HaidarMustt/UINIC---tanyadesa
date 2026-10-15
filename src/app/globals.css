@@ -59,13 +59,16 @@
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
   font-feature-settings: "tnum";
 }
 
-:focus-visible {
-  outline: 3px solid var(--kunyit);
-  outline-offset: 2px;
+/* In the base layer, so a component can replace it (e.g. the ask form rings the whole box). */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--kunyit);
+    outline-offset: 2px;
+  }
 }
 
 /* The one animated moment: the budget ribbon fills in once when the page opens. */

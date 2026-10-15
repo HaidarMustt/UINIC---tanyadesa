@@ -8,7 +8,8 @@ interface AnswerCardProps {
 const STATUS_LABEL: Record<QuestionAnswer["status"], { text: string; className: string }> = {
   ANSWERED: { text: "Terjawab dari APBDes", className: "bg-stamp/10 text-stamp" },
   NOT_FOUND: { text: "Tidak ada di APBDes", className: "bg-line text-muted" },
-  REFUSED: { text: "Data pribadi dilindungi", className: "bg-kunyit-soft text-kunyit-ink" },
+  // REFUSED covers several reasons (personal data, off-topic, unclear), so the label stays neutral.
+  REFUSED: { text: "Tidak bisa dijawab", className: "bg-kunyit-soft text-kunyit-ink" },
 };
 
 // One answer, with the account codes it came from. The codes are the "receipt":
@@ -21,7 +22,8 @@ export function AnswerCard({ result }: AnswerCardProps) {
       <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-extrabold ${label.className}`}>
         {label.text}
       </span>
-      <p className="leading-relaxed">{result.answer}</p>
+      {/* pre-line keeps the line breaks of list answers ("1. ...\n2. ...") */}
+      <p className="leading-relaxed whitespace-pre-line">{result.answer}</p>
 
       {result.sources.length > 0 && (
         <div className="border-t border-dashed border-line pt-3">

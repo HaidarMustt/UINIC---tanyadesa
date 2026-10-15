@@ -136,11 +136,15 @@ export function AskPanel({ slug }: AskPanelProps) {
           </li>
         ))}
       </ol>
-      <div ref={bottomRef} />
+      {/* scroll-mb leaves room so the newest answer is not hidden behind the sticky form */}
+      <div ref={bottomRef} className="scroll-mb-48" />
 
+      {/* Frosted composer: answers scrolling underneath fade out and blur, so the form
+          floats over the conversation instead of cutting it off. */}
+      <div className="sticky bottom-0 bg-linear-to-t from-paper via-paper/70 to-transparent pt-8 pb-3">
       <form
         onSubmit={handleSubmit}
-        className="sticky bottom-3 rounded-2xl border border-line bg-surface p-3 shadow-lg shadow-ink/5"
+        className="rounded-2xl border border-line/70 bg-surface/70 p-3 shadow-lg shadow-ink/10 backdrop-blur-md transition-colors focus-within:border-stamp/60 focus-within:bg-surface/90 focus-within:ring-4 focus-within:ring-stamp/15"
       >
         <label htmlFor="question" className="sr-only">
           Tulis pertanyaan tentang anggaran desa
@@ -154,12 +158,13 @@ export function AskPanel({ slug }: AskPanelProps) {
           rows={2}
           maxLength={MAX_QUESTION_LENGTH}
           placeholder="Contoh: Berapa dana untuk posyandu?"
-          className="w-full resize-none bg-transparent px-2 py-1 placeholder:text-muted focus:outline-none"
+          className="w-full resize-none bg-transparent px-2 py-1 outline-none placeholder:text-muted focus-visible:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
           <span className="px-2 text-xs text-muted" aria-live="polite">
-            {draft.length > MAX_QUESTION_LENGTH - 50 &&
-              `${MAX_QUESTION_LENGTH - draft.length} karakter lagi`}
+            {draft.length > MAX_QUESTION_LENGTH - 50
+              ? `${MAX_QUESTION_LENGTH - draft.length} karakter lagi`
+              : "Tiap pertanyaan dibaca terpisah, jadi tulis lengkap."}
           </span>
           <button
             type="submit"
@@ -170,6 +175,7 @@ export function AskPanel({ slug }: AskPanelProps) {
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 }
