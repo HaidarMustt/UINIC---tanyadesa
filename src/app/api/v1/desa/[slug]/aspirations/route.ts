@@ -1,6 +1,7 @@
 import { DesaSlugSchema } from "@/features/apbdes/schemas";
 import { SubmitAspirationSchema } from "@/features/aspiration/schemas";
 import { submitAspiration } from "@/features/aspiration/server/aspiration.service";
+import { getClientIp, hashIp } from "@/lib/client-ip";
 import { ValidationError } from "@/lib/errors";
 import { withErrorHandling } from "@/lib/http";
 import { getOrCreateSessionId } from "@/lib/session";
@@ -21,7 +22,10 @@ export const POST = withErrorHandling(async (request: Request, { params }: Conte
   if (!parsedBody.success) throw new ValidationError(parsedBody.error.issues[0].message);
 
   const { sessionId, setCookie } = getOrCreateSessionId(request);
-  const saved = await submitAspiration(parsedSlug.data, parsedBody.data, sessionId);
+  const ip = getClientIp(request);
+  // The session secret doubles as salt, so the hash cannot be reversed with a lookup table.
+  const ipHash = ip ? hashIp(ip, process.env.SESSION_SECRET ?? "") : null;
+  const saved = await submitAspiration(parsedSlug.data, parsedBody.data, { sessionId, ipHash });
 
   const response = Response.json({ trackingCode: saved.trackingCode, status: saved.status }, { status: 201 });
   if (setCookie) response.headers.set("Set-Cookie", setCookie);

@@ -3,13 +3,14 @@
 
 import { getPublishedDataset } from "@/features/apbdes/server/apbdes.service";
 import { NotFoundError, RateLimitError, ValidationError } from "@/lib/errors";
-import { checkCategorization, type Categorization } from "../lib/categorize";
+import { checkCategorization, EMPTY_CATEGORIZATION, type Categorization } from "../lib/categorize";
 import { checkAspirationLimits } from "../lib/rate-limit";
 import { generateTrackingCode } from "../lib/tracking-code";
 import type { SubmitAspirationInput } from "../schemas";
 import { suggestCategory } from "./aspiration-ai";
 import {
   countDesaAspirationsSince,
+  countIpAspirationsSince,
   countSessionAspirationsSince,
   createAspiration,
   findAspirationForResident,
@@ -30,15 +31,22 @@ export async function getAspirationFormData(desaSlug: string) {
   return { slug: desa.slug, name: desa.name, isSimulation: desa.isSimulation, dusuns: desa.dusuns };
 }
 
-export async function submitAspiration(desaSlug: string, input: SubmitAspirationInput, sessionId: string) {
+export interface Sender {
+  sessionId: string;
+  ipHash: string | null;
+}
+
+export async function submitAspiration(desaSlug: string, input: SubmitAspirationInput, sender: Sender) {
   const desa = await findDesaForAspirations(desaSlug);
   if (!desa) throw new NotFoundError("Desa tidak ditemukan.");
 
-  const [sessionCount, desaCount] = await Promise.all([
-    countSessionAspirationsSince(sessionId, new Date(Date.now() - ONE_HOUR_MS)),
+  const hourAgo = new Date(Date.now() - ONE_HOUR_MS);
+  const [sessionLastHour, ipLastHour, desaToday] = await Promise.all([
+    countSessionAspirationsSince(sender.sessionId, hourAgo),
+    sender.ipHash ? countIpAspirationsSince(sender.ipHash, hourAgo) : Promise.resolve(0),
     countDesaAspirationsSince(desa.id, startOfToday()),
   ]);
-  const limit = checkAspirationLimits(sessionCount, desaCount);
+  const limit = checkAspirationLimits({ sessionLastHour, ipLastHour, desaToday });
   if (!limit.allowed) throw new RateLimitError(limit.message);
 
   const dusun = input.dusun ? desa.dusuns.find((item) => item.name === input.dusun) : null;
@@ -51,7 +59,7 @@ export async function submitAspiration(desaSlug: string, input: SubmitAspiration
     .map((item) => ({ accountCode: item.accountCode, description: item.description, dusun: item.dusun }));
   const context = { desaName: desa.name, categories: desa.categories.map((category) => category.name), activities };
 
-  let suggestion: Categorization = { categoryName: null, confidence: null, relatedAccountCode: null };
+  let suggestion: Categorization = EMPTY_CATEGORIZATION;
   if (context.categories.length > 0) {
     try {
       suggestion = checkCategorization(await suggestCategory(input.content, context), context);
@@ -73,7 +81,9 @@ export async function submitAspiration(desaSlug: string, input: SubmitAspiration
       ? (dataset?.itemIdByAccountCode.get(suggestion.relatedAccountCode) ?? null)
       : null,
     trackingCode: generateTrackingCode(),
-    sessionId,
+    sessionId: sender.sessionId,
+    ipHash: sender.ipHash,
+    aiFlag: suggestion.flag,
   });
 }
 

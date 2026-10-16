@@ -289,6 +289,8 @@ model Aspiration {
   trackingCode        String           @unique // short secret code; the resident's link to follow up
   sessionId           String? // anonymous browser id, for rate limiting
   forwardedTo         String? // e.g. "Kaur Perencanaan", "BPD"
+  ipHash              String? // SHA-256 of the sender's IP with a secret salt; never the raw IP
+  aiFlag              String? // "SPAM" | "KASAR" | "ANCAMAN", set by AI, checked by an officer
   status              AspirationStatus @default(NEW)
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -302,6 +304,7 @@ model Aspiration {
   @@index([desaId, status])
   @@index([desaId, categoryId])
   @@index([sessionId, createdAt])
+  @@index([ipHash, createdAt])
   @@map("aspirations")
 }
 
