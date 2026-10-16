@@ -3,20 +3,25 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { MAX_ASPIRATION_LENGTH, MIN_ASPIRATION_LENGTH } from "../constants";
+import { TurnstileWidget } from "./turnstile-widget";
 
 interface AspirationFormProps {
   slug: string;
   dusuns: { name: string; rts: string[] }[];
+  turnstileSiteKey: string | null; // null = CAPTCHA turned off (local development)
 }
 
 const FIELD = "w-full rounded-xl border border-line bg-surface px-4 py-3";
 
-export function AspirationForm({ slug, dusuns }: AspirationFormProps) {
+export function AspirationForm({ slug, dusuns, turnstileSiteKey }: AspirationFormProps) {
   const router = useRouter();
   const [content, setContent] = useState("");
   const [dusun, setDusun] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const waitingForCaptcha = turnstileSiteKey !== null && captchaToken === null;
 
   const rts = dusuns.find((item) => item.name === dusun)?.rts ?? [];
 
@@ -36,6 +41,7 @@ export function AspirationForm({ slug, dusuns }: AspirationFormProps) {
           rt: form.get("rt"),
           senderName: form.get("senderName"),
           contact: form.get("contact"),
+          turnstileToken: captchaToken,
         }),
       });
       const body = await response.json().catch(() => null);
@@ -46,6 +52,7 @@ export function AspirationForm({ slug, dusuns }: AspirationFormProps) {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Aspirasi belum terkirim. Coba lagi.");
       setIsSending(false);
+      setCaptchaReset((count) => count + 1); // a token works once, so ask for a new one
     }
   }
 
@@ -127,6 +134,10 @@ export function AspirationForm({ slug, dusuns }: AspirationFormProps) {
         </div>
       </fieldset>
 
+      {turnstileSiteKey && (
+        <TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptchaToken} resetSignal={captchaReset} />
+      )}
+
       {error && (
         <p role="alert" className="rounded-xl bg-kunyit-soft px-4 py-3 text-sm text-kunyit-ink">
           {error}
@@ -135,10 +146,10 @@ export function AspirationForm({ slug, dusuns }: AspirationFormProps) {
 
       <button
         type="submit"
-        disabled={isSending}
+        disabled={isSending || waitingForCaptcha}
         className="w-full rounded-full bg-stamp py-3.5 text-lg font-extrabold text-surface disabled:opacity-60"
       >
-        {isSending ? "Mengirim…" : "Kirim aspirasi"}
+        {isSending ? "Mengirim…" : waitingForCaptcha ? "Memeriksa keamanan…" : "Kirim aspirasi"}
       </button>
     </form>
   );

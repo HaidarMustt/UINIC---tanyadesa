@@ -3,6 +3,7 @@ import { SubmitAspirationSchema } from "@/features/aspiration/schemas";
 import { submitAspiration } from "@/features/aspiration/server/aspiration.service";
 import { getClientIp, hashIp } from "@/lib/client-ip";
 import { ValidationError } from "@/lib/errors";
+import { isTurnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
 import { withErrorHandling } from "@/lib/http";
 import { getOrCreateSessionId } from "@/lib/session";
 
@@ -23,6 +24,14 @@ export const POST = withErrorHandling(async (request: Request, { params }: Conte
 
   const { sessionId, setCookie } = getOrCreateSessionId(request);
   const ip = getClientIp(request);
+
+  // Bots are stopped before any database or AI work is done.
+  if (isTurnstileEnabled()) {
+    const token = typeof body?.turnstileToken === "string" ? body.turnstileToken : null;
+    if (!(await verifyTurnstileToken(token, ip))) {
+      throw new ValidationError("Verifikasi keamanan gagal. Tunggu sebentar, lalu kirim lagi.");
+    }
+  }
   // The session secret doubles as salt, so the hash cannot be reversed with a lookup table.
   const ipHash = ip ? hashIp(ip, process.env.SESSION_SECRET ?? "") : null;
   const saved = await submitAspiration(parsedSlug.data, parsedBody.data, { sessionId, ipHash });

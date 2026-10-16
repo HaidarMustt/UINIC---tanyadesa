@@ -43,7 +43,11 @@ export default async function AspirationPage({ params }: PageProps) {
           </p>
         </div>
 
-        <AspirationForm slug={desa.slug} dusuns={desa.dusuns.map(({ name, rts }) => ({ name, rts }))} />
+        <AspirationForm
+          slug={desa.slug}
+          dusuns={desa.dusuns.map(({ name, rts }) => ({ name, rts }))}
+          turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || null}
+        />
       </main>
     </div>
   );
