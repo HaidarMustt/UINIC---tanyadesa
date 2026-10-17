@@ -47,7 +47,8 @@ Aturan:
   Dana Desa / dari mana asalnya), ADD, PADES, SILPA, BIDANG (pembagian bidang belanja),
   REALISASI (beda anggaran dan realisasi), BLT_DD (apa itu BLT Dana Desa, siapa yang berhak),
   DANA_PER_RT (apakah tiap RT atau dusun mendapat jatah uang sendiri), USUL_KEGIATAN
-  (bagaimana warga mengusulkan kegiatan).
+  (bagaimana warga mengusulkan kegiatan), BUMDES (apa itu BUMDes). Istilah lain yang tidak
+  ada di daftar ini: tetap EXPLAIN dengan topic null.
 - Kata "dana desa" yang berarti "uang desa" secara umum BUKAN sumber dana Dana Desa.
 - dusun: hanya salah satu dari: ${context.dusuns.join(", ")}. Selain itu null.
 - rt: angka saja, contoh "RT 3" menjadi "3".

@@ -16,6 +16,7 @@ export const GLOSSARY_TOPICS = [
   "BLT_DD",
   "DANA_PER_RT",
   "USUL_KEGIATAN",
+  "BUMDES",
 ] as const;
 
 export type GlossaryTopic = (typeof GLOSSARY_TOPICS)[number];
@@ -35,6 +36,12 @@ const revenueFrom = (source: ParsedBudgetItem["fundSource"]) => (items: ParsedBu
 
 const amountSentence = (label: string) => (rows: ParsedBudgetItem[]) =>
   rows.length === 0 ? null : `Di APBDes ini, ${label} dianggarkan ${formatRupiah(sumBudget(rows))}.`;
+
+// "Penyertaan modal ... Rp40.000.000; Hasil usaha ... Rp30.000.000"
+const listSentence = (intro: string) => (rows: ParsedBudgetItem[]) =>
+  rows.length === 0
+    ? null
+    : `${intro} ${rows.map((item) => `${item.description} ${formatRupiah(item.budget)}`).join("; ")}.`;
 
 export const GLOSSARY: Record<GlossaryTopic, GlossaryEntry> = {
   APBDES: {
@@ -104,6 +111,14 @@ export const GLOSSARY: Record<GlossaryTopic, GlossaryEntry> = {
     text:
       "Usulan kegiatan desa dibahas dalam musyawarah dusun dan musyawarah desa saat menyusun rencana tahun berikutnya. " +
       "Kamu juga bisa menyampaikannya lewat menu Aspirasi di TanyaDesa, yang diteruskan ke perangkat desa atau BPD.",
+  },
+  BUMDES: {
+    text:
+      "BUMDes (Badan Usaha Milik Desa) adalah usaha yang dimiliki desa, misalnya simpan pinjam, " +
+      "pengelolaan air bersih, atau wisata desa. Desa bisa menanam modal ke BUMDes, " +
+      "dan sebagian keuntungannya kembali ke desa sebagai Pendapatan Asli Desa.",
+    related: (items) => items.filter((item) => /\bBUMDes\b/i.test(item.description)),
+    figure: listSentence("Di APBDes ini, BUMDes muncul di:"),
   },
 };
 

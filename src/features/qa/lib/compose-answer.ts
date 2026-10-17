@@ -61,6 +61,17 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
     return { status: "REFUSED", text, sources: [] };
   }
 
+  // A term with no fixed explanation: say so honestly instead of "kegiatan tidak ditemukan".
+  if (facts.status === "NOT_FOUND" && facts.unknownTerm) {
+    return {
+      status: "NOT_FOUND",
+      text:
+        "Penjelasan istilah itu belum tersedia di TanyaDesa. Kamu bisa menanyakan angkanya langsung, " +
+        "misalnya \"berapa anggaran untuk ...?\", atau bertanya ke kantor desa.",
+      sources: [],
+    };
+  }
+
   if (facts.status === "NOT_FOUND") {
     return {
       status: "NOT_FOUND",

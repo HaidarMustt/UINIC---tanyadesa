@@ -24,6 +24,25 @@ describe("ask: the test questions", () => {
   }
 });
 
+describe("ask: explaining terms", () => {
+  // Found on the live site (17 Oct 2026): "apa itu bumdes" answered "kegiatan tidak ditemukan".
+  it("explains BUMDes and shows the rows where it appears", async () => {
+    const intent = makeIntent({ type: "EXPLAIN", topic: "BUMDES" });
+    const result = await ask("apa itu bumdes", items, SUKAMAJU_CONTEXT, fakeAi(intent));
+    expect(result.status).toBe("ANSWERED");
+    expect(result.text).toContain("Badan Usaha Milik Desa");
+    expect(result.sources.map((source) => source.accountCode)).toEqual(["4.1.1", "6.2.2"]);
+  });
+
+  it("says honestly when a term has no explanation yet", async () => {
+    const intent = makeIntent({ type: "EXPLAIN", topic: null });
+    const result = await ask("apa itu musrenbangdes", items, SUKAMAJU_CONTEXT, fakeAi(intent));
+    expect(result.status).toBe("NOT_FOUND");
+    expect(result.text).toContain("belum tersedia");
+    expect(result.text).not.toContain("Kegiatan itu");
+  });
+});
+
 describe("ask: safety", () => {
   it("refuses a question only about a person", async () => {
     const intent = makeIntent({ keywords: ["budi"], asksPersonalData: true });

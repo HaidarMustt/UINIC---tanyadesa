@@ -32,7 +32,7 @@ export type Facts =
       items: ParsedBudgetItem[]; // rows of this APBDes that belong to the topic, may be empty
       privacyNote: false;
     }
-  | { status: "NOT_FOUND" }
+  | { status: "NOT_FOUND"; unknownTerm?: true }
   | { status: "REFUSED"; reason: "OFF_TOPIC" | "PERSONAL_DATA" };
 
 export function calculate(intent: Intent, items: ParsedBudgetItem[], dusuns: string[]): Facts {
@@ -40,7 +40,7 @@ export function calculate(intent: Intent, items: ParsedBudgetItem[], dusuns: str
 
   // Explanations come from the fixed glossary; only related numbers come from the rows.
   if (intent.type === "EXPLAIN") {
-    if (!intent.topic) return { status: "NOT_FOUND" };
+    if (!intent.topic) return { status: "NOT_FOUND", unknownTerm: true };
     return { status: "ANSWERED", type: "EXPLAIN", topic: intent.topic, items: relatedRows(intent.topic, items), privacyNote: false };
   }
 
