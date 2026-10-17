@@ -22,7 +22,9 @@ export const IntentSchema = z.object({
     .enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "PARTIALLY_RECEIVED", "RECEIVED"])
     .nullable(),
   keywords: z.array(z.string()).max(8),
-  measure: z.enum(["BUDGET", "REALIZED"]),
+  // Nullable: for EXPLAIN and OFF_TOPIC there is nothing to measure, and the model
+  // writes null there. A required value made the provider reject the whole answer.
+  measure: z.enum(["BUDGET", "REALIZED"]).nullable(), // null is read as BUDGET
   asksPersonalData: z.boolean(),
 });
 
@@ -73,6 +75,7 @@ Aturan:
   sudah, belum) dan JANGAN masukkan nama dusun. Kosongkan ([]) kalau pertanyaannya
   tentang satu bidang, sumber dana, atau status secara keseluruhan.
 - measure: REALIZED kalau warga bertanya uang yang sudah terpakai/cair, selain itu BUDGET.
+  Untuk EXPLAIN dan OFF_TOPIC boleh null.
 - asksPersonalData: true kalau warga menanyakan nama, alamat, atau identitas orang.
 - Isi null untuk yang tidak disebut.
 

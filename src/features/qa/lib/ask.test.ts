@@ -34,6 +34,20 @@ describe("ask: explaining terms", () => {
     expect(result.sources.map((source) => source.accountCode)).toEqual(["4.1.1", "6.2.2"]);
   });
 
+  // Found in the Vercel log (17 Oct 2026): the model wrote measure null for an EXPLAIN question
+  // and the provider rejected it, so the resident saw "sedang sibuk".
+  it("accepts an intent without a measure", async () => {
+    const intent = makeIntent({ type: "EXPLAIN", topic: null, measure: null });
+    const result = await ask("apa itu musrenbangdes", items, SUKAMAJU_CONTEXT, fakeAi(intent));
+    expect(result.status).toBe("NOT_FOUND");
+  });
+
+  it("reads a missing measure as the budget", async () => {
+    const intent = makeIntent({ entryType: "REVENUE", fundSource: "DD", measure: null });
+    const result = await ask("Berapa Dana Desa?", items, SUKAMAJU_CONTEXT, fakeAi(intent));
+    expect(result.text).toContain("Rp939.000.000");
+  });
+
   it("says honestly when a term has no explanation yet", async () => {
     const intent = makeIntent({ type: "EXPLAIN", topic: null });
     const result = await ask("apa itu musrenbangdes", items, SUKAMAJU_CONTEXT, fakeAi(intent));
