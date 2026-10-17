@@ -18,6 +18,7 @@ export interface NewQuestion {
   sessionId: string;
   text: string;
   intent: Intent | null;
+  intentVersion: string | null;
   answer: string | null;
   status: "ANSWERED" | "NOT_FOUND" | "REFUSED" | "ERROR";
   durationMs: number;
@@ -33,6 +34,7 @@ export function saveQuestion(question: NewQuestion) {
       sessionId: question.sessionId,
       text: question.text,
       intent: question.intent ?? Prisma.JsonNull,
+      intentVersion: question.intentVersion,
       answer: question.answer,
       status: question.status,
       durationMs: question.durationMs,
@@ -40,4 +42,21 @@ export function saveQuestion(question: NewQuestion) {
     },
     select: { id: true },
   });
+}
+
+// The latest understanding of the same question, for the same document and prompt version.
+// Questions are stored as typed; "mode: insensitive" ignores capital letters.
+export async function findCachedIntent(documentId: string, intentVersion: string, normalizedText: string) {
+  const found = await db.question.findFirst({
+    where: {
+      documentId,
+      intentVersion,
+      text: { equals: normalizedText, mode: "insensitive" },
+      status: { not: "ERROR" },
+      NOT: { intent: { equals: Prisma.AnyNull } },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { intent: true },
+  });
+  return found?.intent ?? null;
 }

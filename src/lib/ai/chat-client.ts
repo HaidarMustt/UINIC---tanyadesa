@@ -14,10 +14,12 @@ interface ChatConfig {
   model: string;
   apiKey: string;
   reasoningEffort?: string; // "low" | "medium" | "high", for reasoning models
+  // Used when the main model hits its rate limit. On Groq each model has its own quota.
+  fallbackModel?: string;
 }
 
 function readConfigFromEnv(): ChatConfig {
-  const { AI_BASE_URL, AI_MODEL, AI_API_KEY, AI_REASONING_EFFORT } = process.env;
+  const { AI_BASE_URL, AI_MODEL, AI_API_KEY, AI_REASONING_EFFORT, AI_FALLBACK_MODEL } = process.env;
   if (!AI_BASE_URL || !AI_MODEL || !AI_API_KEY) {
     throw new Error("AI_BASE_URL, AI_MODEL, dan AI_API_KEY harus diisi di .env");
   }
@@ -26,6 +28,7 @@ function readConfigFromEnv(): ChatConfig {
     model: AI_MODEL,
     apiKey: AI_API_KEY,
     reasoningEffort: AI_REASONING_EFFORT || undefined,
+    fallbackModel: AI_FALLBACK_MODEL || undefined,
   };
 }
 
@@ -46,7 +49,7 @@ export function isSchemaMismatch(errorBody: string): boolean {
 }
 
 export function createChatClient(config: ChatConfig = readConfigFromEnv()): ChatClient {
-  async function send(body: Record<string, unknown>): Promise<Response> {
+  async function send(body: Record<string, unknown>, model = config.model): Promise<Response> {
     return fetch(`${config.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -54,7 +57,7 @@ export function createChatClient(config: ChatConfig = readConfigFromEnv()): Chat
         Authorization: `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify({
-        model: config.model,
+        model,
         ...(config.reasoningEffort ? { reasoning_effort: config.reasoningEffort } : {}),
         ...body,
       }),
@@ -65,10 +68,17 @@ export function createChatClient(config: ChatConfig = readConfigFromEnv()): Chat
   async function chat(requestBody: Record<string, unknown>): Promise<string> {
     let response = await send(requestBody);
 
-    // Rate limited: wait as long as the provider asks (max 10 s), then try once more.
+    // Rate limited: switch to the fallback model right away if there is one;
+    // otherwise wait as long as the provider asks (max 10 s) and try once more.
     if (response.status === 429) {
-      await sleep(retryDelayMs(response, await response.text()));
-      response = await send(requestBody);
+      const body = await response.text();
+      if (config.fallbackModel) {
+        console.warn(`[ai] ${config.model} rate limited, using ${config.fallbackModel}`);
+        response = await send(requestBody, config.fallbackModel);
+      } else {
+        await sleep(retryDelayMs(response, body));
+        response = await send(requestBody);
+      }
     }
 
     // The model sometimes produces JSON that breaks the schema; the provider then answers 400.

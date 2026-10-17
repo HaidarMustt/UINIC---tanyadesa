@@ -2,11 +2,13 @@
 
 import { getPublishedDataset } from "@/features/apbdes/server/apbdes.service";
 import { NotFoundError, RateLimitError, ServiceUnavailableError } from "@/lib/errors";
-import { ask } from "../lib/ask";
+import { ask, type AiProvider } from "../lib/ask";
+import { buildIntentPrompt, IntentSchema } from "../lib/intent";
+import { intentVersion, normalizeQuestion } from "../lib/intent-cache";
 import type { QuestionAnswer } from "../types";
 import { checkQuestionLimits } from "../lib/rate-limit";
 import { createQaAiProvider } from "./qa-ai";
-import { countDesaQuestionsSince, countSessionQuestionsSince, saveQuestion } from "./qa.repository";
+import { countDesaQuestionsSince, countSessionQuestionsSince, findCachedIntent, saveQuestion } from "./qa.repository";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
@@ -34,12 +36,25 @@ export async function askQuestion(
   if (!limit.allowed) throw new RateLimitError(limit.message);
 
   const context = { desaName: dataset.desaName, fiscalYear: dataset.fiscalYear, dusuns: dataset.dusuns };
-  const base = { desaId: dataset.desaId, documentId: dataset.documentId, sessionId, text: question };
+  const normalized = normalizeQuestion(question);
+  const version = intentVersion(buildIntentPrompt(context));
+  // Stored without extra spaces so the same question is found again next time.
+  const base = { desaId: dataset.desaId, documentId: dataset.documentId, sessionId, text: normalized, intentVersion: version };
   const startedAt = Date.now();
+
+  // Asked before with the same prompt? Reuse that understanding instead of calling the AI.
+  const realAi = createQaAiProvider();
+  const ai: AiProvider = {
+    ...realAi,
+    async understandIntent(systemPrompt, text) {
+      const cached = IntentSchema.safeParse(await findCachedIntent(dataset.documentId, version, normalized));
+      return cached.success ? cached.data : realAi.understandIntent(systemPrompt, text);
+    },
+  };
 
   let result;
   try {
-    result = await ask(question, dataset.items, context, createQaAiProvider());
+    result = await ask(question, dataset.items, context, ai);
   } catch (error) {
     // Record the failure so we can see AI problems later, then tell the resident kindly.
     await saveQuestion({ ...base, intent: null, answer: null, status: "ERROR", durationMs: Date.now() - startedAt, budgetItemIds: [] });

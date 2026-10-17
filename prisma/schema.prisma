@@ -232,6 +232,7 @@ model Question {
   sessionId  String // anonymous browser id, for rate limiting
   text       String
   intent     Json? // AI understanding: { type, filter: { dusun, sectorCode, ... } }
+  intentVersion String? // fingerprint of the prompt that produced the intent (for reuse)
   answer     String?
   status     AnswerStatus
   durationMs Int?
@@ -244,6 +245,7 @@ model Question {
 
   @@index([desaId, createdAt])
   @@index([sessionId, createdAt])
+  @@index([documentId, intentVersion])
   @@map("questions")
 }
 
