@@ -40,6 +40,11 @@ function retryDelayMs(response: Response, body: string): number {
   return 3_000;
 }
 
+// Groq calls this "json_validate_failed"; other providers use similar wording.
+export function isSchemaMismatch(errorBody: string): boolean {
+  return /json_validate_failed|does not match the expected schema/i.test(errorBody);
+}
+
 export function createChatClient(config: ChatConfig = readConfigFromEnv()): ChatClient {
   async function send(body: Record<string, unknown>): Promise<Response> {
     return fetch(`${config.baseUrl}/chat/completions`, {
@@ -57,13 +62,21 @@ export function createChatClient(config: ChatConfig = readConfigFromEnv()): Chat
     });
   }
 
-  async function chat(body: Record<string, unknown>): Promise<string> {
-    let response = await send(body);
+  async function chat(requestBody: Record<string, unknown>): Promise<string> {
+    let response = await send(requestBody);
 
     // Rate limited: wait as long as the provider asks (max 10 s), then try once more.
     if (response.status === 429) {
       await sleep(retryDelayMs(response, await response.text()));
-      response = await send(body);
+      response = await send(requestBody);
+    }
+
+    // The model sometimes produces JSON that breaks the schema; the provider then answers 400.
+    // It is random, not caused by the question, so one more try usually works.
+    if (response.status === 400) {
+      const body = await response.text();
+      if (!isSchemaMismatch(body)) throw new Error(`AI request failed (400): ${body}`);
+      response = await send(requestBody);
     }
 
     if (!response.ok) {
