@@ -10,6 +10,8 @@ const STOP_WORDS = new Set([
   "dana", "anggaran", "biaya", "uang", "desa", "berapa", "total", "jumlah", "apa", "saja",
   "ada", "untuk", "buat", "yang", "status", "selesai", "sudah", "belum", "kegiatan",
   "program", "tahun", "rp", "rupiah", "dusun", "rt",
+  // Already covered by entryType; as keywords they match no row (found in the real-AI eval).
+  "belanja", "pendapatan", "pengeluaran", "pemasukan",
 ]);
 
 function normalize(text: string): string {

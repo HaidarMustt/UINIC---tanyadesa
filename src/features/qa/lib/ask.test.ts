@@ -12,7 +12,7 @@ const { items } = parseApbdesExcel(readFileSync(FIXTURE));
 // A fake AI that always returns the given intent.
 const fakeAi = (intent: unknown): AiProvider => ({ understandIntent: async () => intent });
 
-describe("ask: the 10 test questions", () => {
+describe("ask: the test questions", () => {
   for (const testCase of QA_TEST_CASES) {
     it(testCase.question, async () => {
       const result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, fakeAi(testCase.fakeIntent));
@@ -86,6 +86,17 @@ describe("number guard", () => {
 describe("cleanKeywords", () => {
   it("removes generic words and dusun names", () => {
     expect(cleanKeywords(["Dana", "jalan", "Krajan", "status"], ["Krajan"])).toEqual(["jalan"]);
+  });
+
+  it("removes words already covered by the entry type", () => {
+    expect(cleanKeywords(["belanja", "Pendapatan"], [])).toEqual([]);
+  });
+
+  it("totals a dusun even when the AI adds 'belanja' as a keyword", async () => {
+    // Found during the real-AI evaluation (16 Oct 2026): "belanja" cut 3 rows down to 0.
+    const intent = makeIntent({ entryType: "EXPENDITURE", dusun: "Ngemplak", keywords: ["belanja"] });
+    const result = await ask("Total belanja untuk Dusun Ngemplak berapa?", items, SUKAMAJU_CONTEXT, fakeAi(intent));
+    expect(result.sources.map((source) => source.accountCode)).toEqual(["2.1.04", "2.1.07", "5.2.02"]);
   });
 
   it("removes words of the chosen sector's name", () => {
