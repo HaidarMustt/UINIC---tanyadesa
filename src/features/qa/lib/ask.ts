@@ -60,7 +60,8 @@ export async function ask(
   const template = composeTemplate(facts, context.desaName);
 
   // 3. Optional AI wording, protected by the number guard.
-  if (ai.rewrite && facts.status === "ANSWERED") {
+  // Explanations are written by people and are never reworded.
+  if (ai.rewrite && facts.status === "ANSWERED" && facts.type !== "EXPLAIN") {
     try {
       const draft = await ai.rewrite(buildRewritePrompt(text, facts));
       const filled = fillPlaceholders(draft, placeholderValues(facts));

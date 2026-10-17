@@ -3,6 +3,7 @@
 
 import type { ParsedBudgetItem } from "@/features/apbdes/types";
 import { filterItems } from "./filter-items";
+import { relatedRows, type GlossaryTopic } from "./glossary";
 import type { Intent } from "./intent";
 
 export type Facts =
@@ -24,11 +25,24 @@ export type Facts =
       items: ParsedBudgetItem[];
       privacyNote: boolean;
     }
+  | {
+      status: "ANSWERED";
+      type: "EXPLAIN";
+      topic: GlossaryTopic;
+      items: ParsedBudgetItem[]; // rows of this APBDes that belong to the topic, may be empty
+      privacyNote: false;
+    }
   | { status: "NOT_FOUND" }
   | { status: "REFUSED"; reason: "OFF_TOPIC" | "PERSONAL_DATA" };
 
 export function calculate(intent: Intent, items: ParsedBudgetItem[], dusuns: string[]): Facts {
   if (intent.type === "OFF_TOPIC") return { status: "REFUSED", reason: "OFF_TOPIC" };
+
+  // Explanations come from the fixed glossary; only related numbers come from the rows.
+  if (intent.type === "EXPLAIN") {
+    if (!intent.topic) return { status: "NOT_FOUND" };
+    return { status: "ANSWERED", type: "EXPLAIN", topic: intent.topic, items: relatedRows(intent.topic, items), privacyNote: false };
+  }
 
   const matched = filterItems(items, intent, dusuns);
   if (matched.length === 0) {

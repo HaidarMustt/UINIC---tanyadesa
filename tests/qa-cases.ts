@@ -1,4 +1,4 @@
-// The 10 questions from the "Pertanyaan Uji" sheet, with expected results.
+// The test questions from the "Pertanyaan Uji" sheet, with expected results.
 // Used by the unit test (with a fake AI) and by scripts/eval-qa.ts (with the real AI).
 
 import type { Intent } from "@/features/qa/lib/intent";
@@ -12,6 +12,7 @@ export const SUKAMAJU_CONTEXT = {
 export function makeIntent(partial: Partial<Intent>): Intent {
   return {
     type: "TOTAL",
+    topic: null,
     entryType: null,
     sectorCode: null,
     dusun: null,
@@ -102,5 +103,42 @@ export const QA_TEST_CASES: QaTestCase[] = [
     expectedCodes: ["2.1.03", "2.1.06", "4.1.01", "6.2.2"],
     expectedText: "Ada 4 kegiatan",
     fakeIntent: makeIntent({ type: "LIST", status: "NOT_STARTED" }),
+  },
+
+  // ---- Added after testing on the real page (15 Oct 2026): questions residents actually asked.
+  {
+    question: "apa itu apbdes",
+    expectedStatus: "ANSWERED",
+    expectedCodes: [],
+    expectedText: "Anggaran Pendapatan dan Belanja Desa",
+    fakeIntent: makeIntent({ type: "EXPLAIN", topic: "APBDES" }),
+  },
+  {
+    question: "apakah rt dikasih dana dari desa?",
+    expectedStatus: "ANSWERED",
+    expectedCodes: ["1.2.01", "2.1.01", "2.1.02", "2.1.03", "2.1.04", "2.1.05", "2.1.06", "2.1.07"],
+    expectedText: "tidak membagi uang per RT",
+    fakeIntent: makeIntent({ type: "EXPLAIN", topic: "DANA_PER_RT" }),
+  },
+  {
+    question: "Dana Desa itu sebenarnya uang dari mana sih?",
+    expectedStatus: "ANSWERED",
+    expectedCodes: ["4.2.1"],
+    expectedText: "Rp939.000.000",
+    fakeIntent: makeIntent({ type: "EXPLAIN", topic: "DANA_DESA" }),
+  },
+  {
+    question: "Kapan jadwal posyandu bulan ini?",
+    expectedStatus: "REFUSED",
+    expectedCodes: [],
+    expectedText: "hubungi kantor desa",
+    fakeIntent: makeIntent({ type: "OFF_TOPIC" }),
+  },
+  {
+    question: "Bedanya anggaran sama realisasi apa?",
+    expectedStatus: "ANSWERED",
+    expectedCodes: [],
+    expectedText: "Realisasi adalah",
+    fakeIntent: makeIntent({ type: "EXPLAIN", topic: "REALISASI" }),
   },
 ];

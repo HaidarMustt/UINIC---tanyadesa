@@ -11,6 +11,7 @@ import { FUND_SOURCE_NAMES, STATUS_NAMES } from "@/features/apbdes/constants";
 import type { ParsedBudgetItem } from "@/features/apbdes/types";
 import { formatPercent, formatRupiah } from "@/lib/format";
 import type { Facts } from "./calculate";
+import { explain } from "./glossary";
 
 const MAX_LISTED_ITEMS = 8;
 const PRIVACY_NOTE = "Nama dan data pribadi penerima tidak ditampilkan untuk melindungi privasi warga.";
@@ -56,7 +57,7 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
     const text =
       facts.reason === "PERSONAL_DATA"
         ? `Maaf, TanyaDesa tidak menampilkan data pribadi warga. ${PRIVACY_NOTE}`
-        : `Maaf, TanyaDesa hanya bisa menjawab pertanyaan tentang APBDes ${desaName}.`;
+        : `TanyaDesa menjawab pertanyaan seputar anggaran (APBDes) ${desaName}. Untuk hal lain, silakan hubungi kantor desa atau sampaikan lewat menu Aspirasi.`;
     return { status: "REFUSED", text, sources: [] };
   }
 
@@ -65,6 +66,14 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
       status: "NOT_FOUND",
       text: `Kegiatan itu tidak ditemukan di APBDes ${desaName}. Kalau menurutmu ini dibutuhkan warga, kamu bisa menyampaikannya lewat menu Aspirasi.`,
       sources: [],
+    };
+  }
+
+  if (facts.type === "EXPLAIN") {
+    return {
+      status: "ANSWERED",
+      text: explain(facts.topic, facts.items),
+      sources: facts.items.map((item) => ({ accountCode: item.accountCode, description: item.description })),
     };
   }
 
@@ -103,7 +112,7 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
 
 export function placeholderValues(facts: Facts): Record<string, string> {
   const values: Record<string, string> = {};
-  if (facts.status !== "ANSWERED") return values;
+  if (facts.status !== "ANSWERED" || facts.type === "EXPLAIN") return values;
 
   if (facts.type === "PERCENTAGE") {
     values.PERCENT = formatPercent(facts.percent);
