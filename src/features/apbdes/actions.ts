@@ -67,6 +67,7 @@ export async function publishApbdesAction(formData: FormData): Promise<void> {
   if (user.desa) {
     revalidatePath(`/desa/${user.desa.slug}`);
     revalidatePath(`/desa/${user.desa.slug}/tanya`);
+    revalidatePath(`/desa/${user.desa.slug}/ringkasan`);
   }
   revalidatePath("/panel", "layout");
   redirect("/panel/apbdes?status=terbit");

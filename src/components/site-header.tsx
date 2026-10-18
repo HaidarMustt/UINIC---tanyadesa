@@ -3,25 +3,26 @@ import Link from "next/link";
 interface SiteHeaderProps {
   desaName: string;
   slug: string;
-  current: "summary" | "ask" | "aspiration";
+  // "home" = the welcome page: no tab is highlighted.
+  current: "home" | "summary" | "ask" | "aspiration";
 }
 
 // Top bar shared by the public pages of one desa.
 export function SiteHeader({ desaName, slug, current }: SiteHeaderProps) {
   const links = [
-    { key: "summary", href: `/desa/${slug}`, label: "Ringkasan" },
+    { key: "summary", href: `/desa/${slug}/ringkasan`, label: "Ringkasan" },
     { key: "ask", href: `/desa/${slug}/tanya`, label: "Tanya" },
     { key: "aspiration", href: `/desa/${slug}/aspirasi`, label: "Aspirasi" },
   ] as const;
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-5">
-      <div>
+      <Link href={`/desa/${slug}`} className="rounded-md">
         <span className="text-lg font-extrabold tracking-tight">
           Tanya<span className="text-stamp">Desa</span>
         </span>
         <span className="ml-3 text-sm text-muted">{desaName}</span>
-      </div>
+      </Link>
       <nav aria-label="Halaman desa">
         <ul className="flex gap-1 rounded-full bg-surface p-1 text-sm font-semibold">
           {links.map((link) => {
