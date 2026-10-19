@@ -68,6 +68,13 @@ enum AnswerStatus {
   ERROR // system error
 }
 
+enum InfoCategory {
+  SCHEDULE // jadwal layanan, e.g. posyandu, office hours
+  SERVICE // syarat layanan, e.g. surat pengantar KTP
+  ANNOUNCEMENT // pengumuman, e.g. kerja bakti
+  CONTACT // kontak kantor desa (office numbers only, never personal ones)
+}
+
 enum AspirationStatus {
   NEW
   FORWARDED // sent to village officers and BPD
@@ -99,6 +106,7 @@ model Desa {
   categories  AspirationCategory[]
   aspirations Aspiration[]
   questions   Question[]
+  infos       VillageInfo[]
 
   @@map("desa")
 }
@@ -112,6 +120,7 @@ model Dusun {
   desa        Desa         @relation(fields: [desaId], references: [id], onDelete: Cascade)
   budgetItems BudgetItem[]
   aspirations Aspiration[]
+  infos       VillageInfo[]
 
   @@unique([desaId, name])
   @@map("dusun")
@@ -138,6 +147,7 @@ model User {
   publishedDocuments ApbdesDocument[]     @relation("Publisher")
   responses          AspirationResponse[]
   activityLogs       ActivityLog[]
+  updatedInfos       VillageInfo[]
 
   @@index([desaId])
   @@map("users")
@@ -323,6 +333,33 @@ model AspirationResponse {
 
   @@index([aspirationId])
   @@map("aspiration_responses")
+}
+
+// ============================================================
+// VILLAGE INFORMATION (outside the APBDes)
+// Written by officers in the panel; the AI only picks the category of a question.
+// ============================================================
+
+model VillageInfo {
+  id          String       @id @default(cuid())
+  desaId      String
+  category    InfoCategory
+  title       String
+  content     String
+  dusunId     String? // null = whole village
+  validUntil  DateTime? // last day it is shown (announcements); null = no end
+  isPublished Boolean      @default(true)
+  updatedById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  desa      Desa   @relation(fields: [desaId], references: [id], onDelete: Cascade)
+  dusun     Dusun? @relation(fields: [dusunId], references: [id])
+  updatedBy User   @relation(fields: [updatedById], references: [id])
+
+  @@unique([desaId, title])
+  @@index([desaId, category])
+  @@map("village_infos")
 }
 
 // ============================================================
