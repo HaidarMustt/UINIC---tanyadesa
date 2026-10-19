@@ -4,6 +4,7 @@
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { FUND_SOURCE_NAMES, SECTOR_NAMES } from "../constants";
 import { checkBalance, type BalanceResult } from "../lib/check-balance";
+import { activityProgress, type ActivityProgress } from "../lib/progress";
 import { parseApbdesExcel } from "../lib/parse-excel";
 import { summarize, type GroupTotal } from "../lib/summarize";
 import type { ItemsQuery } from "../schemas";
@@ -157,6 +158,7 @@ export interface PublishedSummary extends DocumentInfo {
   bySector: LabeledGroup[];
   byDusun: LabeledGroup[];
   byFundSource: LabeledGroup[];
+  progress: ActivityProgress;
 }
 
 // Returns null when the desa has no published APBDes yet.
@@ -170,6 +172,7 @@ export async function getPublishedSummary(desaSlug: string): Promise<PublishedSu
   return {
     ...describeDocument(document),
     balance: checkBalance(items),
+    progress: activityProgress(items),
     bySector: summary.bySector.map((group) => ({
       ...group,
       label: SECTOR_NAMES[Number(group.key)] ?? `Bidang ${group.key}`,

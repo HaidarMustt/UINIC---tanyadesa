@@ -4,7 +4,8 @@
 // state (the conversation) and events (typing, submitting).
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { EXAMPLE_QUESTIONS, MAX_QUESTION_LENGTH, MIN_QUESTION_LENGTH } from "../constants";
+import { MAX_QUESTION_LENGTH, MIN_QUESTION_LENGTH } from "../constants";
+import type { QuestionTopic } from "../lib/topics";
 import type { QuestionAnswer } from "../types";
 import { AnswerCard } from "./answer-card";
 
@@ -15,6 +16,7 @@ type Turn =
 
 interface AskPanelProps {
   slug: string;
+  topics: QuestionTopic[];
 }
 
 // Calls our own API. Every failure becomes a sentence a resident can act on.
@@ -37,8 +39,10 @@ async function postQuestion(slug: string, question: string): Promise<QuestionAns
   return body as QuestionAnswer;
 }
 
-export function AskPanel({ slug }: AskPanelProps) {
+export function AskPanel({ slug, topics }: AskPanelProps) {
   const [turns, setTurns] = useState<Turn[]>([]);
+  const [topicId, setTopicId] = useState(topics[0]?.id);
+  const topic = topics.find((item) => item.id === topicId) ?? topics[0];
   const [draft, setDraft] = useState("");
   const nextId = useRef(1);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -92,23 +96,69 @@ export function AskPanel({ slug }: AskPanelProps) {
   return (
     <div className="space-y-6">
       {turns.length === 0 && (
-        <section aria-labelledby="examples-heading">
-          <h2 id="examples-heading" className="font-semibold">
-            Belum tahu mau tanya apa? Coba salah satu:
-          </h2>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {EXAMPLE_QUESTIONS.map((example) => (
-              <li key={example}>
-                <button
-                  type="button"
-                  onClick={() => submit(example)}
-                  className="rounded-full border border-line bg-surface px-4 py-2 text-sm hover:border-stamp hover:text-stamp"
-                >
-                  {example}
-                </button>
-              </li>
-            ))}
-          </ul>
+        <section aria-labelledby="welcome-heading" className="space-y-6">
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-stamp text-surface">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
+              </svg>
+            </span>
+            <div className="space-y-1 rounded-2xl rounded-tl-sm bg-surface px-4 py-3">
+              <h2 id="welcome-heading" className="font-bold">
+                Halo! Mau tanya soal apa?
+              </h2>
+              <p className="text-sm text-muted">
+                Aku bisa bantu cari anggaran, uang yang sudah terpakai, dan kemajuan kegiatan di APBDes desa ini.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            <h3 className="text-sm font-semibold text-muted">Pilih topik</h3>
+            <div role="group" aria-label="Topik pertanyaan" className="flex flex-wrap gap-2">
+              {topics.map((item) => {
+                const isSelected = item.id === topic?.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => setTopicId(item.id)}
+                    className={
+                      isSelected
+                        ? "min-h-11 rounded-full bg-ink px-4 text-sm font-semibold text-paper"
+                        : "min-h-11 rounded-full border border-line bg-surface px-4 text-sm font-semibold hover:border-stamp hover:text-stamp"
+                    }
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {topic && (
+            <div className="space-y-2.5">
+              <h3 className="text-sm font-semibold text-muted">Ketuk salah satu untuk bertanya</h3>
+              <ul className="space-y-2">
+                {topic.questions.map((example) => (
+                  <li key={example}>
+                    <button
+                      type="button"
+                      onClick={() => submit(example)}
+                      className="min-h-12 w-full rounded-xl bg-stamp/10 px-4 py-2.5 text-left text-sm hover:bg-stamp/15"
+                    >
+                      {example}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <p className="rounded-xl bg-kunyit-soft px-4 py-3 text-sm text-kunyit-ink">
+            Jadwal layanan atau syarat bikin surat belum bisa dijawab di sini. Silakan hubungi kantor desa.
+          </p>
         </section>
       )}
 

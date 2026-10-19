@@ -8,6 +8,7 @@ import { SimulationNotice } from "@/features/apbdes/components/simulation-notice
 import { DesaSlugSchema } from "@/features/apbdes/schemas";
 import { getPublishedSummary } from "@/features/apbdes/server/apbdes.service";
 import { AskPanel } from "@/features/qa/components/ask-panel";
+import { buildTopics } from "@/features/qa/lib/topics";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -30,7 +31,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function AskPage({ params }: PageProps) {
   const { slug } = await params;
-  const { desa, document } = await loadDesa(slug);
+  const { desa, document, byDusun } = await loadDesa(slug);
+  // Dusun names from the APBDes itself (the "Seluruh desa" group is not a dusun).
+  const dusuns = byDusun.map((group) => group.key).filter((name) => name !== "Seluruh desa");
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-6 sm:px-6">
@@ -44,13 +47,12 @@ export default async function AskPage({ params }: PageProps) {
             Tanya anggaran {desa.name}
           </h1>
           <p className="text-muted">
-            Tulis pertanyaan dengan bahasa sehari-hari. Jawaban dihitung langsung dari APBDes{" "}
-            {document.fiscalYear}, dan setiap jawaban menyebut kode rekening sumbernya supaya bisa
-            kamu cek sendiri.
+            Jawaban dihitung langsung dari APBDes {document.fiscalYear} dan selalu menyebut kode
+            rekening sumbernya, supaya bisa kamu cek sendiri.
           </p>
         </div>
 
-        <AskPanel slug={desa.slug} />
+        <AskPanel slug={desa.slug} topics={buildTopics(dusuns)} />
 
         <p className="text-xs text-muted">
           Pertanyaan disimpan tanpa nama untuk perbaikan layanan. Jangan menulis data pribadi
