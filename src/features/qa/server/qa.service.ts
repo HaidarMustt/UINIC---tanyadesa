@@ -4,6 +4,7 @@ import { getPublishedDataset } from "@/features/apbdes/server/apbdes.service";
 import { findPublishedInfos } from "@/features/info/server/info.repository";
 import { NotFoundError, RateLimitError, ServiceUnavailableError } from "@/lib/errors";
 import { ask, type AiProvider } from "../lib/ask";
+import { suggestFollowUps } from "../lib/follow-ups";
 import { buildIntentPrompt, IntentSchema } from "../lib/intent";
 import { intentVersion, normalizeQuestion } from "../lib/intent-cache";
 import type { QuestionAnswer } from "../types";
@@ -25,6 +26,7 @@ export async function askQuestion(
   desaSlug: string,
   question: string,
   sessionId: string,
+  previousQuestion: string | null = null,
 ): Promise<QuestionAnswer> {
   const dataset = await getPublishedDataset(desaSlug);
   if (!dataset) throw new NotFoundError("APBDes untuk desa ini belum tersedia.");
@@ -39,8 +41,17 @@ export async function askQuestion(
   const context = { desaName: dataset.desaName, fiscalYear: dataset.fiscalYear, dusuns: dataset.dusuns };
   const normalized = normalizeQuestion(question);
   const version = intentVersion(buildIntentPrompt(context));
+  // A follow-up ("kalau di Krajan?") only makes sense with the question before it, so its
+  // understanding is never reused for someone else: no cache lookup, saved without a version.
+  const isFollowUp = previousQuestion !== null;
   // Stored without extra spaces so the same question is found again next time.
-  const base = { desaId: dataset.desaId, documentId: dataset.documentId, sessionId, text: normalized, intentVersion: version };
+  const base = {
+    desaId: dataset.desaId,
+    documentId: dataset.documentId,
+    sessionId,
+    text: normalized,
+    intentVersion: isFollowUp ? null : version,
+  };
   const startedAt = Date.now();
 
   // Asked before with the same prompt? Reuse that understanding instead of calling the AI.
@@ -48,6 +59,7 @@ export async function askQuestion(
   const ai: AiProvider = {
     ...realAi,
     async understandIntent(systemPrompt, text) {
+      if (isFollowUp) return realAi.understandIntent(systemPrompt, text);
       const cached = IntentSchema.safeParse(await findCachedIntent(dataset.documentId, version, normalized));
       return cached.success ? cached.data : realAi.understandIntent(systemPrompt, text);
     },
@@ -58,7 +70,7 @@ export async function askQuestion(
 
   let result;
   try {
-    result = await ask(question, dataset.items, context, ai, infos);
+    result = await ask(question, dataset.items, context, ai, { infos, previousQuestion });
   } catch (error) {
     // Record the failure so we can see AI problems later, then tell the resident kindly.
     await saveQuestion({ ...base, intent: null, answer: null, status: "ERROR", durationMs: Date.now() - startedAt, budgetItemIds: [] });
@@ -85,6 +97,7 @@ export async function askQuestion(
     kind: result.kind,
     answer: result.text,
     sources: result.sources,
+    suggestions: suggestFollowUps(result.intent, result, question, dataset.dusuns),
     isSimulation: dataset.isSimulation,
   };
 }

@@ -7,7 +7,8 @@ import { getOrCreateSessionId } from "@/lib/session";
 
 type Context = { params: Promise<{ slug: string }> };
 
-// POST /api/v1/desa/sukamaju/questions   body: { "question": "Dana jalan RT 3 berapa?" }
+// POST /api/v1/desa/sukamaju/questions
+// body: { "question": "Kalau di Krajan?", "previousQuestion": "Dana jalan RT 3 berapa?" }  (previousQuestion optional)
 export const POST = withErrorHandling(async (request: Request, { params }: Context) => {
   const { slug } = await params;
 
@@ -19,7 +20,7 @@ export const POST = withErrorHandling(async (request: Request, { params }: Conte
   if (!parsedBody.success) throw new ValidationError(parsedBody.error.issues[0].message);
 
   const { sessionId, setCookie } = getOrCreateSessionId(request);
-  const result = await askQuestion(parsedSlug.data, parsedBody.data.question, sessionId);
+  const result = await askQuestion(parsedSlug.data, parsedBody.data.question, sessionId, parsedBody.data.previousQuestion);
 
   const response = Response.json(result);
   if (setCookie) response.headers.set("Set-Cookie", setCookie);

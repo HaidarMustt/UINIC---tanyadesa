@@ -84,6 +84,11 @@ Aturan:
 - measure: REALIZED kalau warga bertanya uang yang sudah terpakai/cair, selain itu BUDGET.
   Untuk EXPLAIN, INFO, dan OFF_TOPIC boleh null.
 - asksPersonalData: true kalau warga menanyakan nama, alamat, atau identitas orang.
+- Kalau ada "Pertanyaan sebelumnya", pertanyaan sekarang mungkin lanjutannya, misalnya
+  "kalau di Krajan?" atau "yang sudah terpakai berapa?". Ambil dari pertanyaan sebelumnya
+  hal yang tidak disebut lagi (type, kegiatan/keywords, dusun, rt, dsb.), lalu ganti dengan
+  yang disebut di pertanyaan sekarang. Kalau pertanyaan sekarang berdiri sendiri, abaikan
+  pertanyaan sebelumnya.
 - Isi null untuk yang tidak disebut.
 
 Contoh:
@@ -95,5 +100,6 @@ Contoh:
 "Tiap dusun dapat jatah uang berapa dari desa?" -> type EXPLAIN, topic DANA_PER_RT, keywords []
 "Syarat bikin KTP apa saja?" -> type INFO, infoCategory SERVICE, keywords ["ktp"]
 "Posyandu di Krajan kapan?" -> type INFO, infoCategory SCHEDULE, dusun Krajan, keywords ["posyandu"]
-"Siapa juara liga Inggris tahun ini?" -> type OFF_TOPIC`;
+"Siapa juara liga Inggris tahun ini?" -> type OFF_TOPIC
+Sebelumnya "Anggaran irigasi berapa?", sekarang "kalau yang di Tegalsari?" -> type TOTAL, dusun Tegalsari, keywords ["irigasi"]`;
 }

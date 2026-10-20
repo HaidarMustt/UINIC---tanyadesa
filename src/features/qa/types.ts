@@ -11,6 +11,8 @@ export interface QuestionAnswer {
   status: "ANSWERED" | "NOT_FOUND" | "REFUSED";
   // Where the answer comes from: budget rows, a fixed term explanation, or Info desa.
   kind: "APBDES" | "TERM" | "INFO";
+  // Next questions to tap, made by code (no AI).
+  suggestions: string[];
   answer: string;
   sources: AnswerSource[];
   isSimulation: boolean;

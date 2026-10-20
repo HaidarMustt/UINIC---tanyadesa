@@ -16,7 +16,10 @@ const fakeAi = (intent: unknown): AiProvider => ({ understandIntent: async () =>
 describe("ask: the test questions", () => {
   for (const testCase of QA_TEST_CASES) {
     it(testCase.question, async () => {
-      const result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, fakeAi(testCase.fakeIntent), SUKAMAJU_INFOS);
+      const result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, fakeAi(testCase.fakeIntent), {
+        infos: SUKAMAJU_INFOS,
+        previousQuestion: testCase.previousQuestion ?? null,
+      });
 
       expect(result.status).toBe(testCase.expectedStatus);
       expect(result.sources.map((source) => source.accountCode)).toEqual(testCase.expectedCodes);
@@ -61,7 +64,7 @@ describe("ask: explaining terms", () => {
 describe("ask: Info desa", () => {
   it("says honestly when the office has not written that info", async () => {
     const intent = makeIntent({ type: "INFO", infoCategory: "SERVICE", keywords: ["paspor"] });
-    const result = await ask("Syarat bikin paspor apa?", items, SUKAMAJU_CONTEXT, fakeAi(intent), SUKAMAJU_INFOS);
+    const result = await ask("Syarat bikin paspor apa?", items, SUKAMAJU_CONTEXT, fakeAi(intent), { infos: SUKAMAJU_INFOS });
     expect(result.status).toBe("NOT_FOUND");
     expect(result.kind).toBe("INFO");
     expect(result.text).toContain("Belum ada info");
@@ -69,7 +72,7 @@ describe("ask: Info desa", () => {
 
   it("refuses a request for someone's personal contact", async () => {
     const intent = makeIntent({ type: "INFO", infoCategory: "CONTACT", asksPersonalData: true });
-    const result = await ask("Nomor HP pak kades berapa?", items, SUKAMAJU_CONTEXT, fakeAi(intent), SUKAMAJU_INFOS);
+    const result = await ask("Nomor HP pak kades berapa?", items, SUKAMAJU_CONTEXT, fakeAi(intent), { infos: SUKAMAJU_INFOS });
     expect(result.status).toBe("REFUSED");
   });
 });

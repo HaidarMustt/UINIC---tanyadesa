@@ -8,6 +8,7 @@ import { MAX_QUESTION_LENGTH, MIN_QUESTION_LENGTH } from "../constants";
 import type { QuestionTopic } from "../lib/topics";
 import type { QuestionAnswer } from "../types";
 import { AnswerCard } from "./answer-card";
+import { AnswerFeedback } from "./answer-feedback";
 
 type Turn =
   | { id: number; question: string; state: "loading" }
@@ -20,13 +21,13 @@ interface AskPanelProps {
 }
 
 // Calls our own API. Every failure becomes a sentence a resident can act on.
-async function postQuestion(slug: string, question: string): Promise<QuestionAnswer> {
+async function postQuestion(slug: string, question: string, previousQuestion: string | null): Promise<QuestionAnswer> {
   let response: Response;
   try {
     response = await fetch(`/api/v1/desa/${slug}/questions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, previousQuestion }),
     });
   } catch {
     throw new Error("Tidak bisa terhubung. Periksa koneksi internet, lalu coba lagi.");
@@ -61,12 +62,16 @@ export function AskPanel({ slug, topics }: AskPanelProps) {
     const text = question.trim();
     if (isLoading || text.length < MIN_QUESTION_LENGTH) return;
 
+    // The last answered question goes along, so "kalau di Krajan?" can be understood.
+    const lastAnswered = [...turns].reverse().find((turn) => turn.state === "done");
+    const previousQuestion = lastAnswered ? lastAnswered.question : null;
+
     const id = nextId.current++;
     setTurns((current) => [...current, { id, question: text, state: "loading" }]);
     setDraft("");
 
     try {
-      const result = await postQuestion(slug, text);
+      const result = await postQuestion(slug, text, previousQuestion);
       setTurns((current) =>
         current.map((turn) => (turn.id === id ? { id, question: text, state: "done", result } : turn)),
       );
@@ -178,6 +183,27 @@ export function AskPanel({ slug, topics }: AskPanelProps) {
               </p>
             )}
             {turn.state === "done" && <AnswerCard result={turn.result} />}
+            {turn.state === "done" && <AnswerFeedback slug={slug} questionId={turn.result.id} />}
+            {/* Next questions only under the newest answer, so older ones stay calm. */}
+            {turn.state === "done" && turn.id === turns[turns.length - 1]?.id && turn.result.suggestions.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-muted">Tanya lanjutan</p>
+                <ul className="flex flex-wrap gap-2">
+                  {turn.result.suggestions.map((suggestion) => (
+                    <li key={suggestion}>
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => submit(suggestion)}
+                        className="min-h-11 rounded-full border border-line bg-surface px-4 text-sm hover:border-stamp hover:text-stamp disabled:opacity-40"
+                      >
+                        {suggestion}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {turn.state === "error" && (
               <p role="alert" className="rounded-2xl bg-kunyit-soft p-4 text-kunyit-ink">
                 {turn.message}
@@ -214,7 +240,7 @@ export function AskPanel({ slug, topics }: AskPanelProps) {
           <span className="px-2 text-xs text-muted" aria-live="polite">
             {draft.length > MAX_QUESTION_LENGTH - 50
               ? `${MAX_QUESTION_LENGTH - draft.length} karakter lagi`
-              : "Tiap pertanyaan dibaca terpisah, jadi tulis lengkap."}
+              : "Boleh menyambung pertanyaan sebelumnya, misalnya \u201Ckalau di Krajan?\u201D"}
           </span>
           <button
             type="submit"

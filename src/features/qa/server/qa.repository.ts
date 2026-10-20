@@ -60,3 +60,10 @@ export async function findCachedIntent(documentId: string, intentVersion: string
   });
   return found?.intent ?? null;
 }
+
+// A resident rates an answer. Only the browser that asked the question may rate it,
+// so nobody can change other people's ratings by guessing ids.
+export async function setQuestionFeedback(id: string, sessionId: string, isHelpful: boolean): Promise<boolean> {
+  const updated = await db.question.updateMany({ where: { id, sessionId }, data: { isHelpful } });
+  return updated.count > 0;
+}

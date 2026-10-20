@@ -26,6 +26,17 @@ export interface AiProvider {
   rewrite?(prompt: string): Promise<string>;
 }
 
+export interface AskOptions {
+  infos?: InfoEntry[]; // Info desa entries for INFO questions
+  previousQuestion?: string | null; // for follow-ups like "kalau di Krajan?"
+}
+
+// What the AI reads: the question, plus the previous one when there is one.
+export function buildUserMessage(question: string, previousQuestion: string | null): string {
+  if (!previousQuestion) return question;
+  return `Pertanyaan sebelumnya: "${previousQuestion.slice(0, MAX_QUESTION_LENGTH)}"\nPertanyaan sekarang: "${question}"`;
+}
+
 export interface AskResult extends Answer {
   intent: Intent | null;
   usedAiWording: boolean; // true = the sentence was written by the AI and passed the guard
@@ -37,15 +48,16 @@ export async function ask(
   items: ParsedBudgetItem[],
   context: DesaContext,
   ai: AiProvider,
-  infos: InfoEntry[] = [],
+  options: AskOptions = {},
 ): Promise<AskResult> {
+  const { infos = [], previousQuestion = null } = options;
   const text = question.trim().slice(0, MAX_QUESTION_LENGTH);
   if (text.length < 3) {
     return { status: "REFUSED", kind: "APBDES", text: "Pertanyaannya terlalu pendek. Coba tulis lebih lengkap.", sources: [], intent: null, usedAiWording: false };
   }
 
   // 1. Understand the question (AI), then validate the shape (zod).
-  const raw = await ai.understandIntent(buildIntentPrompt(context), text);
+  const raw = await ai.understandIntent(buildIntentPrompt(context), buildUserMessage(text, previousQuestion));
   const parsed = IntentSchema.safeParse(raw);
   if (!parsed.success) {
     return {

@@ -14,6 +14,7 @@ export function ExampleAnswer({ example }: { example: WelcomeExample }) {
           id: "contoh",
           status: example.answer.status,
           kind: example.answer.kind,
+          suggestions: [],
           answer: example.answer.text,
           sources: example.answer.sources,
           isSimulation: false,
