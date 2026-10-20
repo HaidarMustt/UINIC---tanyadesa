@@ -29,6 +29,7 @@ export function makeIntent(partial: Partial<Intent>): Intent {
 
 export interface QaTestCase {
   question: string;
+  previousQuestion?: string; // a follow-up: asked right after this one
   expectedStatus: "ANSWERED" | "NOT_FOUND" | "REFUSED";
   expectedCodes: string[];
   expectedText?: string;
@@ -165,5 +166,23 @@ export const QA_TEST_CASES: QaTestCase[] = [
     expectedCodes: [],
     expectedText: "hubungi kantor desa",
     fakeIntent: makeIntent({ type: "OFF_TOPIC" }),
+  },
+
+  // ---- Follow-up questions (added 20 Oct 2026)
+  {
+    previousQuestion: "Berapa total belanja Dusun Ngemplak?",
+    question: "kalau di Krajan?",
+    expectedStatus: "ANSWERED",
+    expectedCodes: ["1.2.01", "2.1.01"],
+    expectedText: "Rp210.000.000",
+    fakeIntent: makeIntent({ entryType: "EXPENDITURE", dusun: "Krajan" }),
+  },
+  {
+    previousQuestion: "Dana buat jalan RT 3 berapa?",
+    question: "yang sudah terpakai berapa?",
+    expectedStatus: "ANSWERED",
+    expectedCodes: ["2.1.01"],
+    expectedText: "realisasinya",
+    fakeIntent: makeIntent({ rt: "3", keywords: ["jalan"], measure: "REALIZED" }),
   },
 ];

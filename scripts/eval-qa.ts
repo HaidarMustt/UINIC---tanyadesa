@@ -26,7 +26,10 @@ async function main() {
     if (index > 0) await sleep(PAUSE_BETWEEN_QUESTIONS_MS);
     let result;
     try {
-      result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, ai, SUKAMAJU_INFOS);
+      result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, ai, {
+        infos: SUKAMAJU_INFOS,
+        previousQuestion: testCase.previousQuestion ?? null,
+      });
     } catch (error) {
       // A failed request counts as wrong, but the remaining questions still run.
       console.log(`⚠️ ${index + 1}. ${testCase.question}\n   gagal dipanggil: ${(error as Error).message.slice(0, 120)}`);
@@ -37,7 +40,8 @@ async function main() {
       result.status === testCase.expectedStatus && sameCodes(codes, testCase.expectedCodes);
     if (isCorrect) correct++;
 
-    console.log(`${isCorrect ? "✅" : "❌"} ${index + 1}. ${testCase.question}`);
+    const shown = testCase.previousQuestion ? `${testCase.previousQuestion} → ${testCase.question}` : testCase.question;
+    console.log(`${isCorrect ? "✅" : "❌"} ${index + 1}. ${shown}`);
     if (!isCorrect) {
       console.log(`   diharapkan: ${testCase.expectedStatus} [${testCase.expectedCodes.join(", ")}]`);
       console.log(`   didapat   : ${result.status} [${codes.join(", ")}]`);
