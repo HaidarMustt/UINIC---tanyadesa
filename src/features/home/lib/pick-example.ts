@@ -27,6 +27,7 @@ export function pickExample(
   const intent: Intent = {
     type: "TOTAL",
     topic: null,
+    infoCategory: null,
     entryType: "EXPENDITURE",
     sectorCode: null,
     dusun: null,

@@ -13,6 +13,7 @@ export function makeIntent(partial: Partial<Intent>): Intent {
   return {
     type: "TOTAL",
     topic: null,
+    infoCategory: null,
     entryType: null,
     sectorCode: null,
     dusun: null,
@@ -128,11 +129,12 @@ export const QA_TEST_CASES: QaTestCase[] = [
     fakeIntent: makeIntent({ type: "EXPLAIN", topic: "DANA_DESA" }),
   },
   {
+    // Was REFUSED before Info desa existed (20 Oct 2026); now answered from the officers' entries.
     question: "Kapan jadwal posyandu bulan ini?",
-    expectedStatus: "REFUSED",
-    expectedCodes: [],
-    expectedText: "hubungi kantor desa",
-    fakeIntent: makeIntent({ type: "OFF_TOPIC" }),
+    expectedStatus: "ANSWERED",
+    expectedCodes: ["Info desa", "Info desa"], // both posyandu schedules
+    expectedText: "Posyandu Dusun Krajan",
+    fakeIntent: makeIntent({ type: "INFO", infoCategory: "SCHEDULE", keywords: ["posyandu"] }),
   },
   {
     question: "Bedanya anggaran sama realisasi apa?",
@@ -140,5 +142,28 @@ export const QA_TEST_CASES: QaTestCase[] = [
     expectedCodes: [],
     expectedText: "Realisasi adalah",
     fakeIntent: makeIntent({ type: "EXPLAIN", topic: "REALISASI" }),
+  },
+
+  // ---- Info desa (added 20 Oct 2026)
+  {
+    question: "Syarat bikin surat pengantar KTP apa aja?",
+    expectedStatus: "ANSWERED",
+    expectedCodes: ["Info desa"],
+    expectedText: "fotokopi Kartu Keluarga",
+    fakeIntent: makeIntent({ type: "INFO", infoCategory: "SERVICE", keywords: ["ktp", "pengantar"] }),
+  },
+  {
+    question: "Kantor desa buka jam berapa?",
+    expectedStatus: "ANSWERED",
+    expectedCodes: ["Info desa"],
+    expectedText: "Senin sampai Jumat",
+    fakeIntent: makeIntent({ type: "INFO", infoCategory: "SCHEDULE", keywords: ["kantor", "jam"] }),
+  },
+  {
+    question: "Besok hujan nggak ya?",
+    expectedStatus: "REFUSED",
+    expectedCodes: [],
+    expectedText: "hubungi kantor desa",
+    fakeIntent: makeIntent({ type: "OFF_TOPIC" }),
   },
 ];

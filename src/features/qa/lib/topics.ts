@@ -34,6 +34,11 @@ export function buildTopics(dusuns: string[]): QuestionTopic[] {
     },
     { id: "dusun", label: "Kegiatan di dusunku", questions: dusunQuestions },
     {
+      id: "layanan",
+      label: "Jadwal dan layanan",
+      questions: ["Kapan jadwal posyandu?", "Syarat bikin surat pengantar KTP apa?", "Kantor desa buka jam berapa?"],
+    },
+    {
       id: "istilah",
       label: "Arti istilah",
       questions: ["Apa itu APBDes?", "Apa itu Dana Desa?", "Bedanya anggaran sama realisasi apa?"],

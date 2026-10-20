@@ -1,6 +1,7 @@
 // Q&A flow with the database: check limits, ask, save the question and its sources.
 
 import { getPublishedDataset } from "@/features/apbdes/server/apbdes.service";
+import { findPublishedInfos } from "@/features/info/server/info.repository";
 import { NotFoundError, RateLimitError, ServiceUnavailableError } from "@/lib/errors";
 import { ask, type AiProvider } from "../lib/ask";
 import { buildIntentPrompt, IntentSchema } from "../lib/intent";
@@ -52,9 +53,12 @@ export async function askQuestion(
     },
   };
 
+  // Read before the AI call, so a database problem is not reported as an AI problem.
+  const infos = await findPublishedInfos(dataset.desaId);
+
   let result;
   try {
-    result = await ask(question, dataset.items, context, ai);
+    result = await ask(question, dataset.items, context, ai, infos);
   } catch (error) {
     // Record the failure so we can see AI problems later, then tell the resident kindly.
     await saveQuestion({ ...base, intent: null, answer: null, status: "ERROR", durationMs: Date.now() - startedAt, budgetItemIds: [] });
@@ -78,6 +82,7 @@ export async function askQuestion(
   return {
     id: saved.id,
     status: result.status,
+    kind: result.kind,
     answer: result.text,
     sources: result.sources,
     isSimulation: dataset.isSimulation,

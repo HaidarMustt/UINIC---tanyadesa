@@ -13,6 +13,7 @@ export function ExampleAnswer({ example }: { example: WelcomeExample }) {
         result={{
           id: "contoh",
           status: example.answer.status,
+          kind: example.answer.kind,
           answer: example.answer.text,
           sources: example.answer.sources,
           isSimulation: false,

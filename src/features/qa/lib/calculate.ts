@@ -37,6 +37,9 @@ export type Facts =
 
 export function calculate(intent: Intent, items: ParsedBudgetItem[], dusuns: string[]): Facts {
   if (intent.type === "OFF_TOPIC") return { status: "REFUSED", reason: "OFF_TOPIC" };
+  // Info desa questions are answered in ask() from Info desa, never from budget rows.
+  // One that reaches this point asks about a person (e.g. someone's phone number).
+  if (intent.type === "INFO") return { status: "REFUSED", reason: "PERSONAL_DATA" };
 
   // Explanations come from the fixed glossary; only related numbers come from the rows.
   if (intent.type === "EXPLAIN") {

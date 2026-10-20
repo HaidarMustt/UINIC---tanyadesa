@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseApbdesExcel } from "@/features/apbdes/lib/parse-excel";
+import { SUKAMAJU_INFOS } from "../../../../tests/info-fixture";
 import { QA_TEST_CASES, SUKAMAJU_CONTEXT, makeIntent } from "../../../../tests/qa-cases";
 import { ask, type AiProvider } from "./ask";
 import { fillPlaceholders } from "./compose-answer";
@@ -15,7 +16,7 @@ const fakeAi = (intent: unknown): AiProvider => ({ understandIntent: async () =>
 describe("ask: the test questions", () => {
   for (const testCase of QA_TEST_CASES) {
     it(testCase.question, async () => {
-      const result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, fakeAi(testCase.fakeIntent));
+      const result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, fakeAi(testCase.fakeIntent), SUKAMAJU_INFOS);
 
       expect(result.status).toBe(testCase.expectedStatus);
       expect(result.sources.map((source) => source.accountCode)).toEqual(testCase.expectedCodes);
@@ -54,6 +55,22 @@ describe("ask: explaining terms", () => {
     expect(result.status).toBe("NOT_FOUND");
     expect(result.text).toContain("belum tersedia");
     expect(result.text).not.toContain("Kegiatan itu");
+  });
+});
+
+describe("ask: Info desa", () => {
+  it("says honestly when the office has not written that info", async () => {
+    const intent = makeIntent({ type: "INFO", infoCategory: "SERVICE", keywords: ["paspor"] });
+    const result = await ask("Syarat bikin paspor apa?", items, SUKAMAJU_CONTEXT, fakeAi(intent), SUKAMAJU_INFOS);
+    expect(result.status).toBe("NOT_FOUND");
+    expect(result.kind).toBe("INFO");
+    expect(result.text).toContain("Belum ada info");
+  });
+
+  it("refuses a request for someone's personal contact", async () => {
+    const intent = makeIntent({ type: "INFO", infoCategory: "CONTACT", asksPersonalData: true });
+    const result = await ask("Nomor HP pak kades berapa?", items, SUKAMAJU_CONTEXT, fakeAi(intent), SUKAMAJU_INFOS);
+    expect(result.status).toBe("REFUSED");
   });
 });
 

@@ -12,10 +12,22 @@ const STATUS_LABEL: Record<QuestionAnswer["status"], { text: string; className: 
   REFUSED: { text: "Tidak bisa dijawab", className: "bg-kunyit-soft text-kunyit-ink" },
 };
 
+// The label for an answered question says where the answer came from.
+const ANSWERED_LABEL: Record<QuestionAnswer["kind"], string> = {
+  APBDES: "Terjawab dari APBDes",
+  TERM: "Penjelasan istilah",
+  INFO: "Info resmi desa",
+};
+
 // One answer, with the account codes it came from. The codes are the "receipt":
 // a resident can find the same rows in the APBDes document and check the numbers.
 export function AnswerCard({ result }: AnswerCardProps) {
-  const label = STATUS_LABEL[result.status];
+  const label =
+    result.status === "ANSWERED"
+      ? { ...STATUS_LABEL.ANSWERED, text: ANSWERED_LABEL[result.kind ?? "APBDES"] }
+      : result.kind === "INFO" && result.status === "NOT_FOUND"
+        ? { ...STATUS_LABEL.NOT_FOUND, text: "Belum ada infonya" }
+        : STATUS_LABEL[result.status];
 
   return (
     <div className="space-y-3 rounded-2xl bg-surface p-4 sm:p-5">
@@ -28,11 +40,11 @@ export function AnswerCard({ result }: AnswerCardProps) {
       {result.sources.length > 0 && (
         <div className="border-t border-dashed border-line pt-3">
           <p className="text-sm font-semibold text-muted">
-            Sumber di APBDes ({result.sources.length} baris)
+            {result.kind === "INFO" ? "Sumber" : `Sumber di APBDes (${result.sources.length} baris)`}
           </p>
           <ul className="mt-2 space-y-1.5">
             {result.sources.map((source) => (
-              <li key={source.accountCode} className="flex gap-3 text-sm">
+              <li key={`${source.accountCode}-${source.description}`} className="flex gap-3 text-sm">
                 <span className="shrink-0 rounded-md bg-stamp/10 px-2 py-0.5 font-bold text-stamp">
                   {source.accountCode}
                 </span>

@@ -9,6 +9,8 @@ export interface AnswerSource {
 export interface QuestionAnswer {
   id: string;
   status: "ANSWERED" | "NOT_FOUND" | "REFUSED";
+  // Where the answer comes from: budget rows, a fixed term explanation, or Info desa.
+  kind: "APBDES" | "TERM" | "INFO";
   answer: string;
   sources: AnswerSource[];
   isSimulation: boolean;

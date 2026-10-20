@@ -23,6 +23,8 @@ export interface Source {
 
 export interface Answer {
   status: "ANSWERED" | "NOT_FOUND" | "REFUSED";
+  // Where the answer comes from: budget rows, a fixed term explanation, or Info desa.
+  kind: "APBDES" | "TERM" | "INFO";
   text: string;
   sources: Source[];
 }
@@ -57,14 +59,15 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
     const text =
       facts.reason === "PERSONAL_DATA"
         ? `Maaf, TanyaDesa tidak menampilkan data pribadi warga. ${PRIVACY_NOTE}`
-        : `TanyaDesa menjawab pertanyaan seputar anggaran (APBDes) ${desaName}. Untuk hal lain, silakan hubungi kantor desa atau sampaikan lewat menu Aspirasi.`;
-    return { status: "REFUSED", text, sources: [] };
+        : `TanyaDesa menjawab pertanyaan seputar anggaran (APBDes) dan layanan ${desaName}. Untuk hal lain, silakan hubungi kantor desa atau sampaikan lewat menu Aspirasi.`;
+    return { status: "REFUSED", kind: "APBDES", text, sources: [] };
   }
 
   // A term with no fixed explanation: say so honestly instead of "kegiatan tidak ditemukan".
   if (facts.status === "NOT_FOUND" && facts.unknownTerm) {
     return {
       status: "NOT_FOUND",
+      kind: "TERM",
       text:
         "Penjelasan istilah itu belum tersedia di TanyaDesa. Kamu bisa menanyakan angkanya langsung, " +
         "misalnya \"berapa anggaran untuk ...?\", atau bertanya ke kantor desa.",
@@ -75,6 +78,7 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
   if (facts.status === "NOT_FOUND") {
     return {
       status: "NOT_FOUND",
+      kind: "APBDES",
       text: `Kegiatan itu tidak ditemukan di APBDes ${desaName}. Kalau menurutmu ini dibutuhkan warga, kamu bisa menyampaikannya lewat menu Aspirasi.`,
       sources: [],
     };
@@ -83,6 +87,7 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
   if (facts.type === "EXPLAIN") {
     return {
       status: "ANSWERED",
+      kind: "TERM",
       text: explain(facts.topic, facts.items),
       sources: facts.items.map((item) => ({ accountCode: item.accountCode, description: item.description })),
     };
@@ -114,6 +119,7 @@ export function composeTemplate(facts: Facts, desaName: string): Answer {
 
   return {
     status: "ANSWERED",
+    kind: "APBDES",
     text,
     sources: facts.items.map((item) => ({ accountCode: item.accountCode, description: item.description })),
   };

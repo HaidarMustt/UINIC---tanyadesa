@@ -15,6 +15,8 @@ import {
   placeholderValues,
   type Answer,
 } from "./compose-answer";
+import type { InfoEntry } from "@/features/info/types";
+import { answerFromInfo } from "./info-answer";
 import { buildIntentPrompt, IntentSchema, type DesaContext, type Intent } from "./intent";
 
 export interface AiProvider {
@@ -35,10 +37,11 @@ export async function ask(
   items: ParsedBudgetItem[],
   context: DesaContext,
   ai: AiProvider,
+  infos: InfoEntry[] = [],
 ): Promise<AskResult> {
   const text = question.trim().slice(0, MAX_QUESTION_LENGTH);
   if (text.length < 3) {
-    return { status: "REFUSED", text: "Pertanyaannya terlalu pendek. Coba tulis lebih lengkap.", sources: [], intent: null, usedAiWording: false };
+    return { status: "REFUSED", kind: "APBDES", text: "Pertanyaannya terlalu pendek. Coba tulis lebih lengkap.", sources: [], intent: null, usedAiWording: false };
   }
 
   // 1. Understand the question (AI), then validate the shape (zod).
@@ -47,6 +50,7 @@ export async function ask(
   if (!parsed.success) {
     return {
       status: "REFUSED",
+      kind: "APBDES",
       text: "Maaf, pertanyaannya belum bisa dipahami. Coba sebutkan kegiatan, dusun, atau sumber dananya.",
       sources: [],
       intent: null,
@@ -54,6 +58,11 @@ export async function ask(
     };
   }
   const intent = parsed.data;
+
+  // Info desa (schedules, requirements, announcements): answered from officers' entries.
+  if (intent.type === "INFO" && !intent.asksPersonalData) {
+    return { ...answerFromInfo(intent, infos, context.desaName), intent, usedAiWording: false };
+  }
 
   // 2. Calculate (code).
   const facts = calculate(intent, items, context.dusuns);

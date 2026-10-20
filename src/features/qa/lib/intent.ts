@@ -4,11 +4,13 @@
 // on the AI side requires all fields to be present.
 
 import { z } from "zod";
+import { INFO_CATEGORIES } from "@/features/info/constants";
 import { GLOSSARY_TOPICS } from "./glossary";
 
 export const IntentSchema = z.object({
-  type: z.enum(["TOTAL", "LIST", "PERCENTAGE", "STATUS", "EXPLAIN", "OFF_TOPIC"]),
+  type: z.enum(["TOTAL", "LIST", "PERCENTAGE", "STATUS", "EXPLAIN", "INFO", "OFF_TOPIC"]),
   topic: z.enum(GLOSSARY_TOPICS).nullable(), // only for EXPLAIN
+  infoCategory: z.enum(INFO_CATEGORIES).nullable(), // only for INFO
   entryType: z
     .enum(["REVENUE", "EXPENDITURE", "FINANCING_RECEIPT", "FINANCING_EXPENDITURE"])
     .nullable(),
@@ -37,14 +39,18 @@ export interface DesaContext {
 }
 
 export function buildIntentPrompt(context: DesaContext): string {
-  return `Kamu membantu warga ${context.desaName} memahami APBDes tahun ${context.fiscalYear}.
+  return `Kamu membantu warga ${context.desaName} memahami APBDes tahun ${context.fiscalYear} dan info layanan desa.
 Ubah pertanyaan warga menjadi JSON sesuai skema. JANGAN menjawab pertanyaannya.
 
 Aturan:
 - type: TOTAL (berapa jumlahnya), LIST (apa saja), PERCENTAGE (berapa persen),
   STATUS (bagaimana kemajuan kegiatan tertentu), EXPLAIN (warga bertanya ARTI istilah atau
-  CARA KERJA anggaran desa, bukan angka kegiatan tertentu), OFF_TOPIC (bukan tentang anggaran
-  desa ini, misalnya jadwal, syarat layanan surat, alamat kantor, atau topik di luar desa).
+  CARA KERJA anggaran desa, bukan angka kegiatan tertentu), INFO (jadwal layanan, syarat
+  mengurus surat, pengumuman kegiatan warga, jam buka atau kontak kantor desa), OFF_TOPIC
+  (bukan tentang desa ini sama sekali, misalnya cuaca, berita, olahraga, pelajaran sekolah).
+- infoCategory (hanya untuk INFO, selain itu null): SCHEDULE (jadwal posyandu, jam buka
+  kantor), SERVICE (syarat dan cara mengurus surat), ANNOUNCEMENT (kerja bakti, musyawarah,
+  acara warga), CONTACT (nomor telepon, alamat, siapa yang ditemui).
 - topic (hanya untuk EXPLAIN, selain itu null): APBDES (apa itu APBDes), DANA_DESA (apa itu
   Dana Desa / dari mana asalnya), ADD, PADES, SILPA, BIDANG (pembagian bidang belanja),
   REALISASI (beda anggaran dan realisasi), BLT_DD (apa itu BLT Dana Desa, siapa yang berhak),
@@ -74,8 +80,9 @@ Aturan:
   JANGAN masukkan kata umum (dana, anggaran, desa, kegiatan, berapa, status, selesai,
   sudah, belum) dan JANGAN masukkan nama dusun. Kosongkan ([]) kalau pertanyaannya
   tentang satu bidang, sumber dana, atau status secara keseluruhan.
+- Untuk INFO: keywords = kata inti layanannya, contoh ["posyandu"] atau ["ktp", "pengantar"].
 - measure: REALIZED kalau warga bertanya uang yang sudah terpakai/cair, selain itu BUDGET.
-  Untuk EXPLAIN dan OFF_TOPIC boleh null.
+  Untuk EXPLAIN, INFO, dan OFF_TOPIC boleh null.
 - asksPersonalData: true kalau warga menanyakan nama, alamat, atau identitas orang.
 - Isi null untuk yang tidak disebut.
 
@@ -86,5 +93,7 @@ Contoh:
 "Pembangunan talud sampai mana?" -> type STATUS, keywords ["talud"], status null
 "SiLPA itu maksudnya apa?" -> type EXPLAIN, topic SILPA, keywords []
 "Tiap dusun dapat jatah uang berapa dari desa?" -> type EXPLAIN, topic DANA_PER_RT, keywords []
-"Syarat bikin KTP apa saja?" -> type OFF_TOPIC`;
+"Syarat bikin KTP apa saja?" -> type INFO, infoCategory SERVICE, keywords ["ktp"]
+"Posyandu di Krajan kapan?" -> type INFO, infoCategory SCHEDULE, dusun Krajan, keywords ["posyandu"]
+"Siapa juara liga Inggris tahun ini?" -> type OFF_TOPIC`;
 }

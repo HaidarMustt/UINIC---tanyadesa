@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { parseApbdesExcel } from "../src/features/apbdes/lib/parse-excel";
 import { ask } from "../src/features/qa/lib/ask";
 import { createQaAiProvider } from "../src/features/qa/server/qa-ai";
+import { SUKAMAJU_INFOS } from "../tests/info-fixture";
 import { QA_TEST_CASES, SUKAMAJU_CONTEXT } from "../tests/qa-cases";
 
 // Groq's free tier allows 8,000 tokens per minute and one question uses about 2,400,
@@ -25,7 +26,7 @@ async function main() {
     if (index > 0) await sleep(PAUSE_BETWEEN_QUESTIONS_MS);
     let result;
     try {
-      result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, ai);
+      result = await ask(testCase.question, items, SUKAMAJU_CONTEXT, ai, SUKAMAJU_INFOS);
     } catch (error) {
       // A failed request counts as wrong, but the remaining questions still run.
       console.log(`⚠️ ${index + 1}. ${testCase.question}\n   gagal dipanggil: ${(error as Error).message.slice(0, 120)}`);

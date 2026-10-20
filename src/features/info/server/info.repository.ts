@@ -46,3 +46,12 @@ export function createInfo(desaId: string, userId: string, data: InfoData) {
 export function updateInfo(id: string, userId: string, data: Partial<InfoData> & { isPublished?: boolean }) {
   return db.villageInfo.update({ where: { id }, data: { ...data, updatedById: userId }, select: { id: true } });
 }
+
+// Published entries for the Tanya page. Expired ones are filtered by the Q&A code (isInfoActive).
+export async function findPublishedInfos(desaId: string) {
+  const rows = await db.villageInfo.findMany({
+    where: { desaId, isPublished: true },
+    select: { category: true, title: true, content: true, validUntil: true, updatedAt: true, dusun: { select: { name: true } } },
+  });
+  return rows.map(({ dusun, ...row }) => ({ ...row, dusun: dusun?.name ?? null }));
+}

@@ -108,7 +108,7 @@ export function AskPanel({ slug, topics }: AskPanelProps) {
                 Halo! Mau tanya soal apa?
               </h2>
               <p className="text-sm text-muted">
-                Aku bisa bantu cari anggaran, uang yang sudah terpakai, dan kemajuan kegiatan di APBDes desa ini.
+                Aku bisa bantu cari anggaran dan kemajuan kegiatan di APBDes, juga jadwal, syarat layanan, dan pengumuman dari kantor desa.
               </p>
             </div>
           </div>
@@ -157,7 +157,7 @@ export function AskPanel({ slug, topics }: AskPanelProps) {
           )}
 
           <p className="rounded-xl bg-kunyit-soft px-4 py-3 text-sm text-kunyit-ink">
-            Jadwal layanan atau syarat bikin surat belum bisa dijawab di sini. Silakan hubungi kantor desa.
+            Info layanan ditulis oleh perangkat desa. Kalau yang kamu cari belum ada, sampaikan lewat menu Aspirasi.
           </p>
         </section>
       )}
