@@ -1,0 +1,1050 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TanyaDesa API",
+    "version": "1.0.0",
+    "description": "API data terbuka APBDes dan Info desa, serta tanya jawab APBDes dengan bahasa sehari-hari. Endpoint GET terbuka untuk situs lain (CORS). Nilai uang dalam rupiah (bilangan bulat). Data Desa Sukamaju adalah simulasi. Tidak perlu login atau API key."
+  },
+  "servers": [
+    {
+      "url": "https://uinic-tanyadesa.vercel.app"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Data terbuka",
+      "description": "Data APBDes dan Info desa untuk siapa pun"
+    },
+    {
+      "name": "Warga",
+      "description": "Tanya jawab, penilaian jawaban, dan aspirasi"
+    },
+    {
+      "name": "Sistem",
+      "description": "Pemantauan ketersediaan"
+    }
+  ],
+  "paths": {
+    "/api/v1/desa": {
+      "get": {
+        "tags": [
+          "Data terbuka"
+        ],
+        "summary": "Daftar desa yang sudah menerbitkan APBDes",
+        "responses": {
+          "200": {
+            "description": "Daftar desa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesaList"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "listDesa"
+      }
+    },
+    "/api/v1/desa/{slug}/apbdes": {
+      "get": {
+        "tags": [
+          "Data terbuka"
+        ],
+        "summary": "Baris APBDes yang diterbitkan, bisa disaring",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Nama desa di URL",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,60}$",
+              "example": "sukamaju"
+            }
+          },
+          {
+            "name": "entryType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/EntryType"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          {
+            "name": "dusun",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "Ngemplak"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Baris APBDes (JSON) atau file CSV",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApbdesItems"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Desa belum punya APBDes yang diterbitkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "listApbdesItems"
+      }
+    },
+    "/api/v1/desa/{slug}/apbdes/summary": {
+      "get": {
+        "tags": [
+          "Data terbuka"
+        ],
+        "summary": "Ringkasan per bidang, dusun, sumber dana, dan kemajuan kegiatan",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Nama desa di URL",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,60}$",
+              "example": "sukamaju"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ringkasan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApbdesSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Desa belum punya APBDes yang diterbitkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getApbdesSummary"
+      }
+    },
+    "/api/v1/desa/{slug}/info": {
+      "get": {
+        "tags": [
+          "Data terbuka"
+        ],
+        "summary": "Info desa: jadwal, syarat layanan, pengumuman, kontak kantor",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Nama desa di URL",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,60}$",
+              "example": "sukamaju"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/InfoCategory"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Info yang terbit dan masih berlaku",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfoList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Desa tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "listVillageInfo"
+      }
+    },
+    "/api/v1/desa/{slug}/questions": {
+      "post": {
+        "tags": [
+          "Warga"
+        ],
+        "summary": "Bertanya tentang APBDes atau Info desa",
+        "description": "AI hanya memahami pertanyaan; angka dihitung kode dari data. Batas: 20 pertanyaan per sesi per jam, 500 per desa per hari.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Nama desa di URL",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,60}$",
+              "example": "sukamaju"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Jawaban",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Answer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Batas pertanyaan tercapai",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Layanan AI atau database sedang tidak tersedia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "askQuestion"
+      }
+    },
+    "/api/v1/desa/{slug}/questions/{id}/feedback": {
+      "post": {
+        "tags": [
+          "Warga"
+        ],
+        "summary": "Menilai apakah jawaban membantu",
+        "description": "Hanya browser yang mengajukan pertanyaan itu yang bisa menilainya (cookie sesi anonim).",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Nama desa di URL",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,60}$",
+              "example": "sukamaju"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "helpful"
+                ],
+                "properties": {
+                  "helpful": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tersimpan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pertanyaan tidak ditemukan untuk sesi ini",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "rateAnswer"
+      }
+    },
+    "/api/v1/desa/{slug}/aspirations": {
+      "post": {
+        "tags": [
+          "Warga"
+        ],
+        "summary": "Mengirim aspirasi warga",
+        "description": "Boleh tanpa nama. Dilindungi Cloudflare Turnstile dan batas kiriman (5 per sesi per jam, 15 per IP per jam, 200 per desa per hari).",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Nama desa di URL",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,60}$",
+              "example": "sukamaju"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AspirationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Aspirasi diterima",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AspirationCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Batas kiriman tercapai",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "submitAspiration"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Sistem"
+        ],
+        "summary": "Cek kesehatan server dan database",
+        "responses": {
+          "200": {
+            "description": "Sehat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database tidak terjangkau",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getHealth"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "EntryType": {
+        "type": "string",
+        "enum": [
+          "REVENUE",
+          "EXPENDITURE",
+          "FINANCING_RECEIPT",
+          "FINANCING_EXPENDITURE"
+        ]
+      },
+      "FundSource": {
+        "type": "string",
+        "enum": [
+          "DD",
+          "ADD",
+          "PADES",
+          "BHP",
+          "BANKEU_KAB",
+          "BANKEU_PROV",
+          "SILPA",
+          "OTHER"
+        ]
+      },
+      "ActivityStatus": {
+        "type": "string",
+        "enum": [
+          "NOT_STARTED",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "PARTIALLY_RECEIVED",
+          "RECEIVED"
+        ]
+      },
+      "InfoCategory": {
+        "type": "string",
+        "enum": [
+          "SCHEDULE",
+          "SERVICE",
+          "ANNOUNCEMENT",
+          "CONTACT"
+        ]
+      },
+      "DesaRef": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isSimulation": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DocumentRef": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "fiscalYear": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "realizedAsOf": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "DesaList": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "slug": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "district": {
+                  "type": "string"
+                },
+                "regency": {
+                  "type": "string"
+                },
+                "province": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isSimulation": {
+                  "type": "boolean"
+                },
+                "fiscalYears": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "BudgetItem": {
+        "type": "object",
+        "properties": {
+          "accountCode": {
+            "type": "string",
+            "example": "2.1.04"
+          },
+          "entryType": {
+            "$ref": "#/components/schemas/EntryType"
+          },
+          "sectorCode": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sectorName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "dusun": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fundSource": {
+            "$ref": "#/components/schemas/FundSource"
+          },
+          "fundSourceName": {
+            "type": "string"
+          },
+          "budget": {
+            "type": "integer"
+          },
+          "realized": {
+            "type": "integer"
+          },
+          "realizationRate": {
+            "type": "number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ActivityStatus"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ApbdesItems": {
+        "type": "object",
+        "properties": {
+          "desa": {
+            "$ref": "#/components/schemas/DesaRef"
+          },
+          "document": {
+            "$ref": "#/components/schemas/DocumentRef"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetItem"
+            }
+          }
+        }
+      },
+      "GroupTotal": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "budget": {
+            "type": "integer"
+          },
+          "realized": {
+            "type": "integer"
+          },
+          "realizationRate": {
+            "type": "number"
+          },
+          "share": {
+            "type": "number"
+          }
+        }
+      },
+      "ApbdesSummary": {
+        "type": "object",
+        "properties": {
+          "desa": {
+            "$ref": "#/components/schemas/DesaRef"
+          },
+          "document": {
+            "$ref": "#/components/schemas/DocumentRef"
+          },
+          "balance": {
+            "type": "object",
+            "properties": {
+              "totalRevenue": {
+                "type": "integer"
+              },
+              "totalExpenditure": {
+                "type": "integer"
+              },
+              "netFinancing": {
+                "type": "integer"
+              },
+              "difference": {
+                "type": "integer"
+              },
+              "isBalanced": {
+                "type": "boolean"
+              }
+            }
+          },
+          "bySector": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTotal"
+            }
+          },
+          "byDusun": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTotal"
+            }
+          },
+          "byFundSource": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupTotal"
+            }
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "inProgress": {
+                "type": "integer"
+              },
+              "notStarted": {
+                "type": "integer"
+              },
+              "notStartedItems": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "accountCode": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "dusun": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "budget": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "InfoList": {
+        "type": "object",
+        "properties": {
+          "desa": {
+            "$ref": "#/components/schemas/DesaRef"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "$ref": "#/components/schemas/InfoCategory"
+                },
+                "categoryName": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "dusun": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "validUntil": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AskRequest": {
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "example": "Dana buat jalan RT 3 berapa?"
+          },
+          "previousQuestion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500,
+            "description": "Pertanyaan sebelumnya, agar pertanyaan lanjutan seperti \"kalau di Krajan?\" bisa dipahami"
+          }
+        }
+      },
+      "Answer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ANSWERED",
+              "NOT_FOUND",
+              "REFUSED"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "APBDES",
+              "TERM",
+              "INFO"
+            ],
+            "description": "Asal jawaban: baris APBDes, penjelasan istilah, atau Info desa"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountCode": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Saran pertanyaan berikutnya, dibuat oleh kode"
+          },
+          "isSimulation": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AspirationRequest": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "dusun": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "senderName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Hanya terlihat oleh petugas desa dan BPD"
+          },
+          "turnstileToken": {
+            "type": "string",
+            "description": "Wajib jika Turnstile aktif"
+          }
+        }
+      },
+      "AspirationCreated": {
+        "type": "object",
+        "properties": {
+          "trackingCode": {
+            "type": "string",
+            "example": "k7m2p9qa"
+          },
+          "status": {
+            "type": "string",
+            "example": "NEW"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unreachable"
+            ]
+          },
+          "databaseLatencyMs": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "security": []
+}
