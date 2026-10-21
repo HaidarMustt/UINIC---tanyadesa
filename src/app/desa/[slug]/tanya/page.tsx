@@ -26,7 +26,10 @@ async function loadDesa(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const { desa } = await loadDesa(slug);
-  return { title: `Tanya anggaran ${desa.name}` };
+  return {
+    title: `Tanya jawab APBDes ${desa.name}`,
+    description: `Tanyakan dana desa, jadwal, atau layanan di ${desa.name}. Jawaban angka dihitung dari APBDes dan menyertakan sumbernya.`,
+  };
 }
 
 export default async function AskPage({ params }: PageProps) {

@@ -28,7 +28,10 @@ async function loadDataset(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const { desaName } = await loadDataset(slug);
-  return { title: `Tanya anggaran ${desaName}` };
+  return {
+    title: `Tanya anggaran ${desaName}`,
+    description: `Tanya APBDes ${desaName} dengan bahasa sehari-hari. Angka dihitung dari data resmi dan selalu disertai kode rekening sumbernya.`,
+  };
 }
 
 const STEPS = [

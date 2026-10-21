@@ -32,7 +32,10 @@ async function loadSummary(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const summary = await loadSummary(slug);
-  return { title: `Ringkasan APBDes ${summary.document.fiscalYear} ${summary.desa.name}` };
+  return {
+    title: `Ringkasan APBDes ${summary.document.fiscalYear} ${summary.desa.name}`,
+    description: `Ke mana dana ${summary.desa.name} tahun ${summary.document.fiscalYear} dipakai, dalam bahasa sehari-hari: per bidang, per dusun, dan sumber dananya.`,
+  };
 }
 
 export default async function DesaSummaryPage({ params }: PageProps) {

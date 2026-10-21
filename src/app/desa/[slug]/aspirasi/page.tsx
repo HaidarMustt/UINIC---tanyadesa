@@ -21,7 +21,10 @@ async function loadDesa(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const desa = await loadDesa(slug);
-  return { title: `Aspirasi untuk ${desa.name}` };
+  return {
+    title: `Aspirasi untuk ${desa.name}`,
+    description: `Kirim usulan atau keluhan untuk ${desa.name}, boleh tanpa nama, lalu lacak tanggapannya dengan kode lacak.`,
+  };
 }
 
 export default async function AspirationPage({ params }: PageProps) {
