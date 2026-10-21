@@ -28,6 +28,10 @@ erDiagram
 
     USERS ||--o{ ACTIVITY_LOGS : "tercatat"
 
+    DESA ||--o{ VILLAGE_INFOS : "menulis"
+    DUSUN ||--o{ VILLAGE_INFOS : "berlaku di"
+    USERS ||--o{ VILLAGE_INFOS : "memperbarui"
+
     DESA {
         string id PK
         string slug UK "dipakai di URL"
@@ -87,6 +91,7 @@ erDiagram
         json intent "pemahaman AI"
         string intentVersion "sidik jari prompt"
         enum status
+        boolean isHelpful "penilaian warga"
     }
     ANSWER_SOURCES {
         string questionId PK
@@ -117,6 +122,17 @@ erDiagram
         string content
         boolean isPublic
     }
+    VILLAGE_INFOS {
+        string id PK
+        string desaId FK
+        enum category "SCHEDULE, SERVICE, ANNOUNCEMENT, CONTACT"
+        string title
+        string content
+        string dusunId FK "null = seluruh desa"
+        datetime validUntil "pengumuman"
+        boolean isPublished
+        string updatedById FK
+    }
     ACTIVITY_LOGS {
         string id PK
         string userId FK
@@ -137,11 +153,12 @@ erDiagram
 | `apbdes_documents` | Satu baris per versi APBDes yang diunggah. Hanya satu versi berstatus `PUBLISHED` per desa dan tahun; versi lama menjadi `ARCHIVED`. |
 | `sectors` | Lima bidang belanja desa. |
 | `budget_items` | Baris anggaran hasil baca Excel. Kode rekening unik per dokumen. |
-| `questions` | Pertanyaan warga, pemahaman AI, dan status jawabannya. Dipakai juga untuk batas kiriman dan cache pemahaman. |
+| `questions` | Pertanyaan warga, pemahaman AI, status jawaban, dan penilaian warga (`isHelpful`). Dipakai juga untuk batas kiriman, cache pemahaman, dan halaman "Pertanyaan warga". |
 | `answer_sources` | Baris anggaran yang dikutip oleh setiap jawaban (banyak ke banyak). |
 | `aspiration_categories` | Kategori aspirasi per desa. |
 | `aspirations` | Aspirasi warga beserta kategori dan tanda dari AI, kode lacak, dan statusnya. |
 | `aspiration_responses` | Tanggapan petugas. `isPublic = false` untuk catatan internal. |
+| `village_infos` | Info desa yang ditulis perangkat desa: jadwal, syarat layanan, pengumuman, kontak kantor. Disembunyikan, bukan dihapus. Judul unik per desa. |
 | `activity_logs` | Jejak audit: siapa melakukan apa, terhadap data apa, dan kapan. |
 
 ## Indeks penting
@@ -154,3 +171,4 @@ erDiagram
 | `questions` | `(documentId, intentVersion)` | Mencari pemahaman yang bisa dipakai ulang |
 | `aspirations` | `(sessionId, createdAt)`, `(ipHash, createdAt)` | Menghitung batas kiriman |
 | `aspirations` | `trackingCode` unik | Halaman lacak warga |
+| `village_infos` | `(desaId, title)` unik, `(desaId, category)` | Mencegah judul ganda, menyaring per kategori |

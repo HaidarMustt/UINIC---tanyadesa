@@ -2,7 +2,7 @@
 
 **Tanya anggaran desa dengan bahasa sehari-hari, dapat jawaban yang bisa dicek sendiri.**
 
-TanyaDesa adalah modul *smart governance* untuk ekosistem desa cerdas. Warga bisa menanyakan APBDes (Anggaran Pendapatan dan Belanja Desa) seperti bertanya ke tetangga, misalnya *"Dana buat jalan RT 3 berapa?"*. Jawaban dihitung langsung dari data APBDes resmi dan selalu menyebut kode rekening sumbernya. Warga juga bisa menyampaikan aspirasi yang diteruskan ke perangkat desa dan BPD.
+TanyaDesa adalah modul *smart governance* untuk ekosistem desa cerdas. Warga bisa menanyakan APBDes (Anggaran Pendapatan dan Belanja Desa) seperti bertanya ke tetangga, misalnya *"Dana buat jalan RT 3 berapa?"*, lalu menyambung *"kalau di Krajan?"*. Jawaban dihitung langsung dari data APBDes resmi dan selalu menyebut kode rekening sumbernya. Warga juga bisa menanyakan jadwal dan syarat layanan yang ditulis perangkat desa, serta menyampaikan aspirasi yang diteruskan ke perangkat desa dan BPD.
 
 Dibuat untuk **UINIC 8.0 Web Development Competition**.
 
@@ -12,6 +12,7 @@ Dibuat untuk **UINIC 8.0 Web Development Competition**.
 | Halaman status (uptime) | https://stats.uptimerobot.com/ZMe0W6btlv |
 | Cek kesehatan sistem | https://uinic-tanyadesa.vercel.app/api/health |
 | Contoh API data terbuka | https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/apbdes/summary |
+| Spesifikasi API (OpenAPI 3.1) | https://uinic-tanyadesa.vercel.app/openapi.json |
 
 > Data Desa Sukamaju adalah **data simulasi** untuk demonstrasi, bukan data desa sungguhan. Halaman warga menampilkan label "Simulasi".
 
@@ -41,7 +42,8 @@ TanyaDesa membuat data yang sama bisa **ditanyakan**, **dicek**, dan **ditanggap
 
 - warga bertanya dengan bahasa sehari-hari dan langsung mendapat angka beserta sumbernya;
 - data dibuka sebagai API sehingga bisa dipakai aplikasi lain;
-- warga menyampaikan aspirasi dan bisa memantau tanggapannya.
+- warga menyampaikan aspirasi dan bisa memantau tanggapannya;
+- desa melihat apa yang ditanyakan warga dan data apa yang perlu dilengkapi.
 
 ## Fitur
 
@@ -49,8 +51,9 @@ TanyaDesa membuat data yang sama bisa **ditanyakan**, **dicek**, dan **ditanggap
 
 | Fitur | Alamat | Keterangan |
 |---|---|---|
-| Ringkasan | `/desa/sukamaju` | Total anggaran, persentase realisasi, sebaran per bidang, dusun, dan sumber dana. |
-| Tanya | `/desa/sukamaju/tanya` | Bertanya tentang APBDes. Jawaban menyebut kode rekening sumber. Pertanyaan tentang data pribadi dan di luar APBDes ditolak dengan sopan. |
+| Sambutan | `/desa/sukamaju` | Halaman awal yang ramah: tiga pilihan jelas dan contoh tanya jawab sungguhan, bukan langsung tabel angka. |
+| Ringkasan | `/desa/sukamaju/ringkasan` | Dibuka dengan kalimat sehari-hari ("Tahun ini desa mengelola Rp1,49 miliar untuk 28 kegiatan"), kabar kegiatan, lalu rincian angka lengkap yang bisa dibuka. |
+| Tanya | `/desa/sukamaju/tanya` | Bertanya tentang APBDes dan layanan desa. Bisa menyambung pertanyaan sebelumnya. Setiap jawaban menyebut sumbernya, memberi saran pertanyaan lanjutan, dan bisa dinilai membantu atau tidak. Pertanyaan tentang data pribadi ditolak dengan sopan. |
 | Aspirasi | `/desa/sukamaju/aspirasi` | Kirim usulan atau keluhan, boleh tanpa nama. Warga mendapat kode lacak untuk memantau tanggapan. |
 | Lacak aspirasi | `/desa/sukamaju/aspirasi/{kode}` | Melihat status dan tanggapan petugas. |
 
@@ -61,13 +64,16 @@ Contoh pertanyaan yang bisa dijawab:
 - "Berapa persen belanja untuk pembangunan?"
 - "Kegiatan apa saja yang belum dimulai?"
 - "Apa itu SiLPA?" (penjelasan istilah dasar)
+- "Kapan jadwal posyandu?", "Syarat bikin surat pengantar KTP apa?" (Info desa)
+- "Berapa total belanja Dusun Ngemplak?" lalu "kalau di Krajan?" (pertanyaan lanjutan)
 
 ### Untuk petugas desa (perlu login di `/masuk`)
 
 | Peran | Bisa melakukan |
 |---|---|
-| Operator | Mengunggah Excel APBDes, memeriksa hasil baca, menerbitkan atau membatalkan; mengelola aspirasi (kategori, teruskan, tanggapi, tandai selesai). |
-| BPD | Membaca dan menanggapi aspirasi. |
+| Operator | Mengunggah Excel APBDes, memeriksa hasil baca, menerbitkan atau membatalkan; mengelola **Info desa** (jadwal, syarat layanan, pengumuman, kontak kantor); mengelola aspirasi (kategori, teruskan, tanggapi, tandai selesai). |
+| BPD | Membaca dan menanggapi aspirasi; melihat Info desa dan Pertanyaan warga. |
+| Keduanya | **Pertanyaan warga**: jumlah pertanyaan, persentase terjawab dan dinilai membantu, pertanyaan yang belum bisa dijawab, serta kegiatan yang paling sering ditanyakan. |
 
 Setiap tindakan petugas dicatat di log aktivitas. Versi APBDes lama diarsipkan, tidak dihapus.
 
@@ -82,8 +88,9 @@ Model bahasa bisa menghasilkan jawaban yang terdengar meyakinkan padahal salah. 
 1. **AI hanya memahami pertanyaan.** AI mengubah pertanyaan menjadi struktur data ("niat"): jenis pertanyaan, dusun, RT, bidang, sumber dana, status, kata kunci. Struktur ini divalidasi dengan skema (zod).
 2. **Kode yang menghitung.** Penyaringan baris APBDes dan semua penjumlahan dilakukan oleh kode, bukan oleh AI.
 3. **Setiap jawaban menyebut sumber.** Kode rekening yang dipakai ditampilkan di bawah jawaban.
-4. **Penjelasan istilah ditulis manusia.** Untuk pertanyaan seperti "apa itu APBDes", AI hanya memilih topik; isi penjelasannya teks tetap.
-5. **Batas yang jujur.** Pertanyaan di luar APBDes (jadwal layanan, syarat surat) tidak dijawab, melainkan diarahkan ke kantor desa atau menu Aspirasi.
+4. **Penjelasan istilah dan info layanan ditulis manusia.** Untuk "apa itu APBDes", AI hanya memilih topik; untuk "kapan posyandu?", AI hanya memilih kategori dan kata kunci. Isinya teks tetap dari daftar istilah atau dari Info desa yang ditulis perangkat desa.
+5. **Batas yang jujur.** Jika data atau info belum ada, sistem mengatakannya dan mengarahkan ke kantor desa atau menu Aspirasi, bukan mengarang. Topik di luar desa (cuaca, berita) ditolak dengan sopan.
+6. **Percakapan yang luwes.** Pertanyaan sebelumnya ikut dikirim sebagai konteks, sehingga "kalau di Krajan?" dipahami. Saran pertanyaan lanjutan dibuat oleh kode, tanpa memanggil AI.
 
 ```mermaid
 flowchart LR
@@ -91,13 +98,13 @@ flowchart LR
     AI --> V{"Validasi skema<br/>(zod)"}
     V -- tidak valid --> R["Minta pertanyaan<br/>diperjelas"]
     V -- valid --> C["Kode menyaring<br/>dan menghitung"]
-    DB[("APBDes<br/>yang diterbitkan")] --> C
-    C --> A["Jawaban + kode rekening sumber"]
+    DB[("APBDes yang diterbitkan,<br/>Info desa, daftar istilah")] --> C
+    C --> A["Jawaban + sumber<br/>+ saran pertanyaan lanjutan"]
 ```
 
 Untuk aspirasi, AI menebak kategori dan menandai pesan yang mungkin spam, kasar, atau berisi ancaman. Keputusan akhir selalu di tangan petugas.
 
-**Hemat kuota.** Pertanyaan yang sama persis untuk APBDes dan prompt yang sama memakai ulang pemahaman yang tersimpan, tanpa memanggil AI lagi; angkanya tetap dihitung ulang dari data. Jika kuota model utama habis, sistem beralih ke model cadangan (gpt-oss-20b).
+**Hemat kuota.** Pertanyaan yang sama persis untuk APBDes dan prompt yang sama memakai ulang pemahaman yang tersimpan, tanpa memanggil AI lagi; angkanya tetap dihitung ulang dari data. Pertanyaan lanjutan tidak memakai cache ini, karena artinya bergantung pada pertanyaan sebelumnya. Jika kuota model utama habis, sistem beralih ke model cadangan (gpt-oss-20b).
 
 ## Arsitektur
 
@@ -136,14 +143,14 @@ flowchart TB
     H --> DB
 ```
 
-Kode disusun **per fitur** di `src/features/` (`apbdes`, `qa`, `aspiration`, `auth`). Setiap fitur memisahkan:
+Kode disusun **per fitur** di `src/features/` (`apbdes`, `qa`, `info`, `aspiration`, `auth`, `home`). Setiap fitur memisahkan:
 
 - `lib/`: logika murni tanpa database, mudah diuji;
 - `server/`: akses database dan layanan luar;
 - `components/`: tampilan;
 - `actions.ts` dan `schemas.ts`: aksi server dan validasi input.
 
-Skema database (12 tabel) ada di [docs/ERD.md](docs/ERD.md).
+Skema database (13 tabel) ada di [docs/ERD.md](docs/ERD.md).
 
 ## Keamanan dan privasi
 
@@ -155,9 +162,9 @@ Skema database (12 tabel) ada di [docs/ERD.md](docs/ERD.md).
 | Validasi input | Semua input API dan form divalidasi dengan zod. |
 | Anti-spam | Batas aspirasi: 5 per sesi per jam, 15 per IP per jam, 200 per desa per hari. Batas pertanyaan: 20 per sesi per jam, 500 per desa per hari. |
 | Anti-bot | Cloudflare Turnstile di form aspirasi, diverifikasi di server sebelum ada kerja database atau AI. Jika verifikasi gagal atau layanan tidak bisa dihubungi, kiriman ditolak (*fail-closed*). |
-| Privasi warga | Aspirasi boleh tanpa nama. Kontak hanya terlihat oleh petugas. IP tidak disimpan, hanya hash SHA-256 dengan garam rahasia. Kode lacak acak 8 karakter. AI menolak pertanyaan tentang data pribadi. |
+| Privasi warga | Aspirasi boleh tanpa nama. Kontak hanya terlihat oleh petugas. IP tidak disimpan, hanya hash SHA-256 dengan garam rahasia. Kode lacak acak 8 karakter. AI menolak pertanyaan tentang data pribadi. Pertanyaan disimpan tanpa identitas; petugas tidak pernah melihat id sesi. Penilaian jawaban hanya bisa dikirim oleh browser yang mengajukan pertanyaan itu. |
 | Header HTTP | `Content-Security-Policy` (frame-ancestors, base-uri, form-action, object-src), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`. |
-| Jejak audit | Unggah, terbit, batal, login, dan tindakan aspirasi dicatat di tabel `activity_logs`. |
+| Jejak audit | Unggah, terbit, batal, login, perubahan Info desa, dan tindakan aspirasi dicatat di tabel `activity_logs`. |
 | Dependensi | Diaudit dengan `npm audit`. Library `xlsx` versi npm yang rentan diganti dengan SheetJS 0.20.3 resmi. |
 | Rahasia | Semua kunci di variabel lingkungan, tidak pernah di kode. Lihat [.env.example](.env.example). |
 
@@ -171,20 +178,21 @@ Skema database (12 tabel) ada di [docs/ERD.md](docs/ERD.md).
 
 ## Hasil pengujian
 
-**Tes otomatis:** 91 tes (Vitest), menguji pembaca Excel, perhitungan, alur tanya jawab, batas kiriman, sesi, dan lainnya.
+**Tes otomatis:** 127 tes (Vitest), menguji pembaca Excel, perhitungan, alur tanya jawab, Info desa, pertanyaan lanjutan, batas kiriman, sesi, dan lainnya.
 
 ```
 npm test
 ```
 
-**Ketepatan AI** diukur dengan 15 pertanyaan memakai model AI sungguhan, termasuk pertanyaan istilah, data pribadi, dan di luar topik ([tests/qa-cases.ts](tests/qa-cases.ts)).
+**Ketepatan AI** diukur dengan 20 pertanyaan memakai model AI sungguhan: angka APBDes, istilah, data pribadi, Info desa, pertanyaan lanjutan, dan topik di luar desa ([tests/qa-cases.ts](tests/qa-cases.ts)).
 
-| Versi | Putaran | Tepat |
-|---|---|---|
-| Akhir (17 Oktober 2026) | 2 | **29 dari 30 (96,7%)**, tanpa kegagalan teknis |
-| Model cadangan gpt-oss-20b | 1 | 14 dari 15 |
+| Versi | Soal | Putaran | Tepat |
+|---|---|---|---|
+| Akhir (20 Oktober 2026) | 20 | 2 | **40 dari 40 (100%)**, tanpa kegagalan teknis |
+| 17 Oktober 2026 | 15 | 2 | 29 dari 30 (96,7%) |
+| Model cadangan gpt-oss-20b (17 Oktober) | 15 | 1 | 14 dari 15 |
 
-Kesalahan yang tersisa: pada "Kegiatan apa saja yang belum dimulai?", AI kadang membatasi hanya pada belanja sehingga penyertaan modal BUMDes (pembiayaan) tidak ikut terhitung.
+Soal-soal ini disusun pengembang sendiri, sehingga skor ini mengukur kasus yang sudah dikenal. Pada pengujian sebelumnya, pertanyaan "Kegiatan apa saja yang belum dimulai?" kadang salah karena AI membatasinya pada belanja saja; kasus ini tetap dipantau.
 
 ```
 npx tsx --env-file=.env scripts/eval-qa.ts
@@ -284,30 +292,34 @@ prisma/
 scripts/               skrip bantu (impor APBDes, evaluasi AI)
 src/
   app/                 halaman dan API (App Router)
-    desa/[slug]/       halaman warga: ringkasan, tanya, aspirasi
+    desa/[slug]/       halaman warga: sambutan, ringkasan, tanya, aspirasi
     masuk/             login petugas
-    panel/             panel petugas: APBDes, aspirasi
+    panel/             panel petugas: APBDes, pertanyaan warga, info desa, aspirasi
     api/v1/            API data terbuka
     api/health/        cek kesehatan sistem
   features/
     apbdes/            pembaca Excel, ringkasan, unggah dan terbit
-    qa/                tanya jawab: niat AI, perhitungan, penyusunan jawaban
+    qa/                tanya jawab: niat AI, perhitungan, jawaban, saran lanjutan, penilaian
+    info/              info desa: jadwal, syarat layanan, pengumuman, kontak
     aspiration/        aspirasi: kirim, kategorisasi AI, panel
     auth/              login, sesi, peran
+    home/              halaman sambutan
   lib/                 bagian bersama: database, AI client, keamanan, log
   components/          komponen tampilan bersama
-tests/                 data uji dan 15 kasus evaluasi AI
+tests/                 data uji dan 20 kasus evaluasi AI
 docs/                  dokumentasi tambahan
+public/openapi.json    spesifikasi API (OpenAPI 3.1)
 ```
 
 ## Dokumentasi lain
 
 - [docs/API.md](docs/API.md): endpoint API, parameter, dan contoh respons
+- [public/openapi.json](public/openapi.json): spesifikasi OpenAPI 3.1, bisa dibuka di Swagger atau Postman
 - [docs/ERD.md](docs/ERD.md): diagram relasi database
 - [docs/FORMAT-EXCEL.md](docs/FORMAT-EXCEL.md): format Excel APBDes dan prosedur unggah
 
 ## Pengembangan berikutnya
 
-- Menjawab pertanyaan dari dokumen desa lain (pengumuman, jadwal layanan, laporan kegiatan) dengan teknik *Retrieval-Augmented Generation*, tetap dengan prinsip yang sama: hanya dari dokumen resmi dan selalu menyebut sumber.
+- Menjawab pertanyaan dari dokumen desa yang panjang (peraturan desa, laporan kegiatan) dengan teknik *Retrieval-Augmented Generation*, tetap dengan prinsip yang sama: hanya dari dokumen resmi dan selalu menyebut sumber. Info desa yang terstruktur adalah langkah pertamanya.
 - Membaca langsung file ekspor aplikasi keuangan desa.
-- Halaman analitik "pertanyaan warga" untuk perangkat desa.
+- Dukungan banyak desa dalam satu instalasi, dan kanal lain seperti WhatsApp.

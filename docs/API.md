@@ -1,13 +1,17 @@
 # API TanyaDesa
 
-Semua endpoint ada di bawah `https://uinic-tanyadesa.vercel.app`. Respons berformat JSON (UTF-8), kecuali jika diminta CSV.
+Semua endpoint ada di bawah `https://uinic-tanyadesa.vercel.app`. Respons berformat JSON (UTF-8), kecuali jika diminta CSV. Tidak perlu login atau API key.
+
+Spesifikasi lengkap dalam format **OpenAPI 3.1** tersedia di [`/openapi.json`](https://uinic-tanyadesa.vercel.app/openapi.json) dan bisa dibuka di Swagger UI atau Postman.
 
 | Metode | Endpoint | Kegunaan | Terbuka untuk situs lain (CORS) |
 |---|---|---|---|
 | GET | `/api/v1/desa` | Daftar desa yang sudah menerbitkan APBDes | Ya |
 | GET | `/api/v1/desa/{slug}/apbdes` | Baris APBDes, bisa disaring, JSON atau CSV | Ya |
-| GET | `/api/v1/desa/{slug}/apbdes/summary` | Ringkasan per bidang, dusun, sumber dana | Ya |
-| POST | `/api/v1/desa/{slug}/questions` | Bertanya tentang APBDes | Tidak |
+| GET | `/api/v1/desa/{slug}/apbdes/summary` | Ringkasan per bidang, dusun, sumber dana, dan kemajuan kegiatan | Ya |
+| GET | `/api/v1/desa/{slug}/info` | Info desa: jadwal, syarat layanan, pengumuman, kontak kantor | Ya |
+| POST | `/api/v1/desa/{slug}/questions` | Bertanya tentang APBDes atau Info desa | Tidak |
+| POST | `/api/v1/desa/{slug}/questions/{id}/feedback` | Menilai apakah jawaban membantu | Tidak |
 | POST | `/api/v1/desa/{slug}/aspirations` | Mengirim aspirasi | Tidak |
 | GET | `/api/health` | Cek kesehatan server dan database | Tidak |
 
@@ -143,17 +147,59 @@ Bentuk respons:
     { "key": "2", "label": "Pelaksanaan Pembangunan Desa", "budget": 0, "realized": 0, "realizationRate": 0.0, "share": 0.0 }
   ],
   "byDusun": [ { "key": "Ngemplak", "label": "Ngemplak", "budget": 0, "realized": 0, "realizationRate": 0.0, "share": 0.0 } ],
-  "byFundSource": [ { "key": "DD", "label": "Dana Desa", "budget": 0, "realized": 0, "realizationRate": 0.0, "share": 0.0 } ]
+  "byFundSource": [ { "key": "DD", "label": "Dana Desa", "budget": 0, "realized": 0, "realizationRate": 0.0, "share": 0.0 } ],
+  "progress": {
+    "total": 28,
+    "completed": 12,
+    "inProgress": 14,
+    "notStarted": 2,
+    "notStartedItems": [
+      { "accountCode": "2.1.03", "description": "Pembangunan talud penahan tebing sungai Dusun Karangrejo RT 06", "dusun": "Karangrejo", "budget": 70000000 }
+    ]
+  }
 }
 ```
 
 - `balance.difference` = pendapatan + pembiayaan netto − belanja. Nol berarti seimbang.
 - `realizationRate` dan `share` bernilai 0 sampai 1.
 - Kegiatan tanpa dusun dikelompokkan sebagai "Seluruh desa".
+- `progress` menghitung kegiatan belanja per status; `notStartedItems` diurutkan dari anggaran terbesar.
+
+## GET `/api/v1/desa/{slug}/info`
+
+Info desa yang ditulis perangkat desa: hanya yang terbit dan masih berlaku. Pengumuman yang tanggal "berlaku sampai"-nya sudah lewat tidak ikut.
+
+| Parameter (query) | Wajib | Contoh | Keterangan |
+|---|---|---|---|
+| `category` | Tidak | `SERVICE` | `SCHEDULE` (jadwal), `SERVICE` (syarat layanan), `ANNOUNCEMENT` (pengumuman), `CONTACT` (kontak kantor) |
+
+```
+curl "https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/info?category=SERVICE"
+```
+
+```json
+{
+  "desa": { "slug": "sukamaju", "name": "Desa Sukamaju", "isSimulation": true },
+  "count": 2,
+  "items": [
+    {
+      "category": "SERVICE",
+      "categoryName": "Syarat layanan",
+      "title": "Surat pengantar KTP",
+      "content": "Bawa fotokopi Kartu Keluarga dan surat pengantar dari RT. ...",
+      "dusun": null,
+      "validUntil": null,
+      "updatedAt": "2026-10-20T01:00:00.000Z"
+    }
+  ]
+}
+```
+
+Di-cache lebih singkat dari data APBDes (`max-age=60, s-maxage=300`), karena perangkat desa lebih sering mengubahnya. Kategori yang tidak dikenal dijawab `400`.
 
 ## POST `/api/v1/desa/{slug}/questions`
 
-Bertanya tentang APBDes dengan bahasa sehari-hari.
+Bertanya tentang APBDes atau Info desa dengan bahasa sehari-hari. AI hanya memahami pertanyaan; angka dihitung kode dari data, dan isi info layanan diambil dari Info desa.
 
 ```
 curl -X POST https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/questions \
@@ -164,26 +210,51 @@ curl -X POST https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/questions \
 | Isi (body) | Wajib | Keterangan |
 |---|---|---|
 | `question` | Ya | 3 sampai 500 karakter |
+| `previousQuestion` | Tidak | Pertanyaan sebelumnya, agar pertanyaan lanjutan seperti "kalau di Krajan?" dipahami |
 
 ```json
 {
   "id": "cm...",
   "status": "ANSWERED",
+  "kind": "APBDES",
   "answer": "Pengaspalan jalan lingkungan Dusun Krajan RT 03 (panjang 250 m) anggarannya Rp185.000.000, bersumber dari Dana Desa. Statusnya sudah selesai, dengan realisasi Rp185.000.000 (100%). Keterangan: Selesai Juli 2026.",
   "sources": [
     { "accountCode": "2.1.01", "description": "Pengaspalan jalan lingkungan Dusun Krajan RT 03 (panjang 250 m)" }
   ],
+  "suggestions": ["Yang sudah terpakai berapa?", "Kegiatan apa saja di RT 3?", "Kegiatan apa saja yang belum dimulai?"],
   "isSimulation": true
 }
 ```
 
+| `kind` | Asal jawaban |
+|---|---|
+| `APBDES` | Baris APBDes; `sources` berisi kode rekening yang dipakai |
+| `TERM` | Penjelasan istilah dari daftar istilah tetap (misalnya APBDes, SiLPA, BUMDes) |
+| `INFO` | Info desa; `sources` berisi judul info dan tanggal diperbarui |
+
+`suggestions` berisi saran pertanyaan berikutnya yang dibuat oleh kode, bukan AI.
+
 | `status` | Arti |
 |---|---|
-| `ANSWERED` | Terjawab dari APBDes; `sources` berisi baris yang dipakai |
-| `NOT_FOUND` | Tidak ada di APBDes, atau penjelasan istilahnya belum tersedia |
-| `REFUSED` | Ditolak: data pribadi, di luar APBDes, atau pertanyaan tidak bisa dipahami |
+| `ANSWERED` | Terjawab; lihat `kind` untuk asal jawabannya |
+| `NOT_FOUND` | Tidak ada di APBDes, penjelasan istilahnya belum tersedia, atau Info desa tentang itu belum ditulis |
+| `REFUSED` | Ditolak: data pribadi, topik di luar desa, atau pertanyaan tidak bisa dipahami |
 
 Batas: 20 pertanyaan per sesi browser per jam, 500 per desa per hari (kode 429). Sesi dikenali lewat cookie anonim yang dibuat otomatis.
+
+## POST `/api/v1/desa/{slug}/questions/{id}/feedback`
+
+Menilai apakah sebuah jawaban membantu. `{id}` adalah `id` dari respons pertanyaan.
+
+| Isi (body) | Wajib | Keterangan |
+|---|---|---|
+| `helpful` | Ya | `true` atau `false` |
+
+```json
+{ "ok": true }
+```
+
+Hanya browser yang mengajukan pertanyaan itu yang bisa menilainya (dicek lewat cookie sesi anonim). Pertanyaan milik sesi lain dijawab `404`, sehingga penilaian orang lain tidak bisa diubah dengan menebak id. Hasil penilaian tampil untuk perangkat desa di halaman "Pertanyaan warga".
 
 ## POST `/api/v1/desa/{slug}/aspirations`
 
