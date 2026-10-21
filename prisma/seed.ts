@@ -2,6 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { DEMO_VILLAGE_INFOS } from "./demo-infos";
 
 const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -32,59 +33,6 @@ const ASPIRATION_CATEGORIES = [
   "Lainnya",
 ];
 
-// Simulation village information (Info desa). Fictional, like the rest of Desa Sukamaju.
-// Phone numbers are deliberately not real.
-const VILLAGE_INFOS = [
-  {
-    category: "SCHEDULE",
-    title: "Jam layanan kantor desa",
-    content: "Senin sampai Jumat pukul 08.00–14.00, Sabtu pukul 08.00–12.00. Minggu dan hari libur nasional tutup.",
-    dusun: null,
-    validUntil: null,
-  },
-  {
-    category: "SCHEDULE",
-    title: "Posyandu Dusun Krajan",
-    content: "Setiap tanggal 10, pukul 08.00–11.00 di Balai Dusun Krajan. Bawa buku KIA. Ada penimbangan balita dan pemberian makanan tambahan.",
-    dusun: "Krajan",
-    validUntil: null,
-  },
-  {
-    category: "SCHEDULE",
-    title: "Posyandu Dusun Tegalsari",
-    content: "Setiap tanggal 15, pukul 08.00–11.00 di rumah Ketua RT 11. Bawa buku KIA.",
-    dusun: "Tegalsari",
-    validUntil: null,
-  },
-  {
-    category: "SERVICE",
-    title: "Surat pengantar KTP",
-    content: "Bawa fotokopi Kartu Keluarga dan surat pengantar dari RT. Diurus di kantor desa, biasanya selesai di hari yang sama. Tidak dipungut biaya.",
-    dusun: null,
-    validUntil: null,
-  },
-  {
-    category: "SERVICE",
-    title: "Surat keterangan tidak mampu (SKTM)",
-    content: "Bawa Kartu Keluarga, KTP, dan surat pengantar dari RT. Ditandatangani kepala desa, biasanya 1–2 hari kerja. Tidak dipungut biaya.",
-    dusun: null,
-    validUntil: null,
-  },
-  {
-    category: "ANNOUNCEMENT",
-    title: "Kerja bakti bersih saluran",
-    content: "Minggu, 1 November 2026, pukul 07.00. Kumpul di Balai Desa, bawa cangkul atau sapu lidi. Fokus di saluran Dusun Ngemplak dan Karangrejo.",
-    dusun: null,
-    validUntil: new Date("2026-11-01T00:00:00+07:00"),
-  },
-  {
-    category: "CONTACT",
-    title: "Kantor Desa Sukamaju",
-    content: "Telepon kantor (0000) 123-456 (nomor simulasi). Untuk surat-menyurat temui Kaur Umum; untuk pembangunan temui Kaur Perencanaan.",
-    dusun: null,
-    validUntil: null,
-  },
-] as const;
 
 async function main() {
   const demoPassword = process.env.DEMO_PASSWORD;
@@ -147,7 +95,7 @@ async function main() {
   }
 
   // Info desa: created once; later edits made in the panel are not overwritten.
-  for (const info of VILLAGE_INFOS) {
+  for (const info of DEMO_VILLAGE_INFOS) {
     const data = {
       category: info.category,
       title: info.title,
@@ -163,7 +111,7 @@ async function main() {
   }
 
   console.log(
-    `✅ Seed selesai: Desa Sukamaju, 4 dusun, 5 bidang, 8 kategori, 2 akun demo, ${VILLAGE_INFOS.length} info desa`,
+    `✅ Seed selesai: Desa Sukamaju, 4 dusun, 5 bidang, 8 kategori, 2 akun demo, ${DEMO_VILLAGE_INFOS.length} info desa`,
   );
 }
 
