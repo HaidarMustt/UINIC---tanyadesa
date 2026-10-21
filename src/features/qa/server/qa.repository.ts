@@ -67,3 +67,61 @@ export async function setQuestionFeedback(id: string, sessionId: string, isHelpf
   const updated = await db.question.updateMany({ where: { id, sessionId }, data: { isHelpful } });
   return updated.count > 0;
 }
+
+// ---------------------------------------------------------------- panel: Pertanyaan warga
+// Officers see the question texts and statuses, never the anonymous session id.
+
+export async function countQuestionsByStatus(desaId: string, since: Date) {
+  const rows = await db.question.groupBy({
+    by: ["status"],
+    where: { desaId, createdAt: { gte: since } },
+    _count: { _all: true },
+  });
+  return rows.map((row) => ({ status: row.status, count: row._count._all }));
+}
+
+export async function countRatings(desaId: string, since: Date) {
+  const rows = await db.question.groupBy({
+    by: ["isHelpful"],
+    where: { desaId, createdAt: { gte: since }, isHelpful: { not: null } },
+    _count: { _all: true },
+  });
+  return rows.map((row) => ({ isHelpful: row.isHelpful === true, count: row._count._all }));
+}
+
+const QUESTION_ROW = { id: true, text: true, status: true, isHelpful: true, createdAt: true } as const;
+
+export function findRecentQuestions(desaId: string, take: number) {
+  return db.question.findMany({ where: { desaId }, orderBy: { createdAt: "desc" }, take, select: QUESTION_ROW });
+}
+
+// Questions TanyaDesa could not answer: a hint for what data or Info desa to add.
+export function findUnansweredQuestions(desaId: string, since: Date, take: number) {
+  return db.question.findMany({
+    where: { desaId, createdAt: { gte: since }, status: "NOT_FOUND" },
+    orderBy: { createdAt: "desc" },
+    take,
+    select: QUESTION_ROW,
+  });
+}
+
+// The budget rows cited most often in answers (per row; merged per account code by the caller).
+export async function findMostCitedRows(desaId: string, since: Date, take: number) {
+  const groups = await db.answerSource.groupBy({
+    by: ["budgetItemId"],
+    where: { question: { desaId, createdAt: { gte: since } } },
+    _count: { budgetItemId: true },
+    orderBy: { _count: { budgetItemId: "desc" } },
+    take,
+  });
+  if (groups.length === 0) return [];
+
+  const items = await db.budgetItem.findMany({
+    where: { id: { in: groups.map((group) => group.budgetItemId) } },
+    select: { id: true, accountCode: true, description: true },
+  });
+  return groups.flatMap((group) => {
+    const item = items.find((candidate) => candidate.id === group.budgetItemId);
+    return item ? [{ accountCode: item.accountCode, description: item.description, count: group._count.budgetItemId }] : [];
+  });
+}

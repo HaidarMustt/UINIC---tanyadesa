@@ -10,6 +10,7 @@ const ROLE_NAMES = { OPERATOR: "Operator desa", BPD: "Anggota BPD", ADMIN: "Admi
 const MENU = [
   { href: "/panel", label: "Beranda" },
   { href: "/panel/apbdes", label: "APBDes" },
+  { href: "/panel/pertanyaan", label: "Pertanyaan warga" },
   { href: "/panel/info", label: "Info desa" },
   { href: "/panel/aspirasi", label: "Aspirasi" },
 ];
