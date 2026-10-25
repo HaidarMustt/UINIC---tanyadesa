@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { logoutAction } from "@/features/auth/actions";
 import { requireUser } from "@/features/auth/server/auth-session";
+import { BrandMark } from "@/components/brand-mark";
 
 const ROLE_NAMES = { OPERATOR: "Operator desa", BPD: "Anggota BPD", ADMIN: "Admin" } as const;
 
@@ -22,6 +23,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-wrap">
       <aside className="flex max-w-full flex-[1_1_240px] flex-col gap-7 border-r border-line bg-surface px-5 py-7">
         <div>
+          <BrandMark className="mb-1 size-8" />
           <span className="text-lg font-extrabold tracking-tight">
             Tanya<span className="text-stamp">Desa</span>
           </span>

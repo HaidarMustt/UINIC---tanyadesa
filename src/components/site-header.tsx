@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
 
 interface SiteHeaderProps {
   desaName: string;
@@ -17,11 +18,12 @@ export function SiteHeader({ desaName, slug, current }: SiteHeaderProps) {
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-5">
-      <Link href={`/desa/${slug}`} className="rounded-md">
+      <Link href={`/desa/${slug}`} className="flex items-center gap-2 rounded-md">
+       <BrandMark className="size-7 shrink-0" />
         <span className="text-lg font-extrabold tracking-tight">
-          Tanya<span className="text-stamp">Desa</span>
-        </span>
-        <span className="ml-3 text-sm text-muted">{desaName}</span>
+            Tanya<span className="text-stamp">Desa</span>
+          </span>
+          <span className="ml-3 text-sm text-muted">{desaName}</span>
       </Link>
       <nav aria-label="Halaman desa">
         <ul className="flex gap-1 rounded-full bg-surface p-1 text-sm font-semibold">
