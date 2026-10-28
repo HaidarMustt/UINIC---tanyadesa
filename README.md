@@ -1,14 +1,24 @@
-# TanyaDesa
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-gelap.png">
+    <img src="docs/img/logo.png" alt="TanyaDesa" width="360">
+  </picture>
+</p>
 
-**Tanya anggaran desa dengan bahasa sehari-hari, dapat jawaban yang bisa dicek sendiri.**
+<p align="center"><strong>Tanya anggaran desa dengan bahasa sehari-hari, dapat jawaban yang bisa dicek sendiri.</strong></p>
 
 TanyaDesa adalah modul *smart governance* untuk ekosistem desa cerdas. Warga bisa menanyakan APBDes (Anggaran Pendapatan dan Belanja Desa) seperti bertanya ke tetangga, misalnya *"Dana buat jalan RT 3 berapa?"*, lalu menyambung *"kalau di Krajan?"*. Jawaban dihitung langsung dari data APBDes resmi dan selalu menyebut kode rekening sumbernya. Warga juga bisa menanyakan jadwal dan syarat layanan yang ditulis perangkat desa, serta menyampaikan aspirasi yang diteruskan ke perangkat desa dan BPD.
 
 Dibuat untuk **UINIC 8.0 Web Development Competition**.
 
+<p align="center">
+  <img src="docs/img/tampilan-hp.png" alt="Tampilan TanyaDesa di HP: halaman sambutan, jawaban beserta sumbernya, dan saran pertanyaan lanjutan" width="760">
+</p>
+
 | | |
 |---|---|
-| Demo online | https://uinic-tanyadesa.vercel.app |
+| Demo online | https://uinic-tanyadesa.vercel.app/desa/sukamaju |
+| Panduan mencoba (10 menit) | [docs/PANDUAN.md](docs/PANDUAN.md) |
 | Halaman status (uptime) | https://stats.uptimerobot.com/ZMe0W6btlv |
 | Cek kesehatan sistem | https://uinic-tanyadesa.vercel.app/api/health |
 | Contoh API data terbuka | https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/apbdes/summary |
@@ -23,14 +33,15 @@ Dibuat untuk **UINIC 8.0 Web Development Competition**.
 1. [Masalah yang diselesaikan](#masalah-yang-diselesaikan)
 2. [Fitur](#fitur)
 3. [Prinsip desain AI](#prinsip-desain-ai)
-4. [Arsitektur](#arsitektur)
-5. [Keamanan dan privasi](#keamanan-dan-privasi)
-6. [Ketersediaan](#ketersediaan)
-7. [Hasil pengujian](#hasil-pengujian)
-8. [Teknologi](#teknologi)
-9. [Menjalankan di komputer sendiri](#menjalankan-di-komputer-sendiri)
-10. [Struktur folder](#struktur-folder)
-11. [Dokumentasi lain](#dokumentasi-lain)
+4. [Identitas visual](#identitas-visual)
+5. [Arsitektur](#arsitektur)
+6. [Keamanan dan privasi](#keamanan-dan-privasi)
+7. [Ketersediaan](#ketersediaan)
+8. [Hasil pengujian](#hasil-pengujian)
+9. [Teknologi](#teknologi)
+10. [Menjalankan di komputer sendiri](#menjalankan-di-komputer-sendiri)
+11. [Struktur folder](#struktur-folder)
+12. [Dokumentasi lain](#dokumentasi-lain)
 
 ---
 
@@ -51,7 +62,7 @@ TanyaDesa membuat data yang sama bisa **ditanyakan**, **dicek**, dan **ditanggap
 
 | Fitur | Alamat | Keterangan |
 |---|---|---|
-| Sambutan | `/desa/sukamaju` | Halaman awal yang ramah: tiga pilihan jelas dan contoh tanya jawab sungguhan, bukan langsung tabel angka. |
+| Sambutan | `/desa/sukamaju` | Halaman awal yang ramah: tombol **Mulai bertanya**, pilihan yang jelas, dan contoh tanya jawab sungguhan, bukan langsung tabel angka. |
 | Ringkasan | `/desa/sukamaju/ringkasan` | Dibuka dengan kalimat sehari-hari ("Tahun ini desa mengelola Rp1,49 miliar untuk 28 kegiatan"), kabar kegiatan, lalu rincian angka lengkap yang bisa dibuka. |
 | Tanya | `/desa/sukamaju/tanya` | Bertanya tentang APBDes dan layanan desa. Bisa menyambung pertanyaan sebelumnya. Setiap jawaban menyebut sumbernya, memberi saran pertanyaan lanjutan, dan bisa dinilai membantu atau tidak. Pertanyaan tentang data pribadi ditolak dengan sopan. |
 | Aspirasi | `/desa/sukamaju/aspirasi` | Kirim usulan atau keluhan, boleh tanpa nama. Warga mendapat kode lacak untuk memantau tanggapan. |
@@ -105,6 +116,12 @@ flowchart LR
 Untuk aspirasi, AI menebak kategori dan menandai pesan yang mungkin spam, kasar, atau berisi ancaman. Keputusan akhir selalu di tangan petugas.
 
 **Hemat kuota.** Pertanyaan yang sama persis untuk APBDes dan prompt yang sama memakai ulang pemahaman yang tersimpan, tanpa memanggil AI lagi; angkanya tetap dihitung ulang dari data. Pertanyaan lanjutan tidak memakai cache ini, karena artinya bergantung pada pertanyaan sebelumnya. Jika kuota model utama habis, sistem beralih ke model cadangan (gpt-oss-20b).
+
+## Identitas visual
+
+- **Logo:** atap joglo bertingkat di atas balon percakapan, yaitu "ruang bertanya di balai desa".
+- **Warna:** biru stempel `#2F43A3` (keresmian), kuning kunyit `#E3A21A` (kehangatan desa), tinta `#1A2140`, kertas `#F3F4F7`. Semua pasangan teks dan latar memenuhi kontras WCAG AA, dengan mode gelap.
+- **Huruf:** Plus Jakarta Sans, dengan angka *tabular* agar digit rupiah sejajar.
 
 ## Arsitektur
 
@@ -197,6 +214,27 @@ Soal-soal ini disusun pengembang sendiri, sehingga skor ini mengukur kasus yang 
 ```
 npx tsx --env-file=.env scripts/eval-qa.ts
 ```
+
+**Uji coba pengguna** (25 sampai 28 Oktober 2026, 9 partisipan: 4 warga desa dan 5 mahasiswa, 7 lewat HP) dengan tiga tugas dan kuesioner System Usability Scale (SUS):
+
+| Ukuran | Hasil |
+|---|---|
+| Menyelesaikan ketiga tugas | 7 dari 9 partisipan |
+| Skor SUS rata-rata | 64,7 dari 100 (rentang 50 sampai 87,5) |
+| "Saya percaya pada angka karena ada sumbernya" | 4,0 dari 5 |
+| "Bahasa jawabannya mudah saya pahami" | 4,1 dari 5 |
+
+Kedua partisipan yang belum berhasil adalah warga berusia 45 tahun ke atas. Evaluasi lanjutan menemukan hambatan pada jalan masuk ke fitur tanya, dan tiga di antaranya sudah diperbaiki: tombol **Mulai bertanya** yang jelas, teks contoh yang tidak lagi terlihat seperti sudah terisi, dan kotak pertanyaan yang tidak menutupi pilihan topik. Masukan bahwa jawaban terasa kaku dicatat sebagai pengembangan berikutnya.
+
+**Audit Lighthouse** (mode HP, 21 Oktober 2026):
+
+| Halaman | Performance | Accessibility | Best Practices | SEO |
+|---|---|---|---|---|
+| Sambutan | 88 | 100 | 100 | 100 |
+| Tanya | 98 | 100 | 100 | 100 |
+| Ringkasan | 100 | 100 | 100 | 90* |
+
+\*Diukur sebelum deskripsi halaman ditambahkan; perbaikan yang sama menaikkan SEO halaman Tanya dari 90 ke 100.
 
 ## Teknologi
 
@@ -313,6 +351,7 @@ public/openapi.json    spesifikasi API (OpenAPI 3.1)
 
 ## Dokumentasi lain
 
+- [docs/PANDUAN.md](docs/PANDUAN.md): panduan mencoba semua fitur dalam 10 menit
 - [docs/API.md](docs/API.md): endpoint API, parameter, dan contoh respons
 - [public/openapi.json](public/openapi.json): spesifikasi OpenAPI 3.1, bisa dibuka di Swagger atau Postman
 - [docs/ERD.md](docs/ERD.md): diagram relasi database
@@ -320,6 +359,7 @@ public/openapi.json    spesifikasi API (OpenAPI 3.1)
 
 ## Pengembangan berikutnya
 
+- Jawaban yang lebih luwes: AI merangkai ulang kalimat dari fakta hasil hitungan, lalu kode memeriksa bahwa setiap angka tetap sama persis.
 - Menjawab pertanyaan dari dokumen desa yang panjang (peraturan desa, laporan kegiatan) dengan teknik *Retrieval-Augmented Generation*, tetap dengan prinsip yang sama: hanya dari dokumen resmi dan selalu menyebut sumber. Info desa yang terstruktur adalah langkah pertamanya.
 - Membaca langsung file ekspor aplikasi keuangan desa.
 - Dukungan banyak desa dalam satu instalasi, dan kanal lain seperti WhatsApp.
