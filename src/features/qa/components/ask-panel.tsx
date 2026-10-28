@@ -217,7 +217,15 @@ export function AskPanel({ slug, topics }: AskPanelProps) {
 
       {/* Frosted composer: answers scrolling underneath fade out and blur, so the form
           floats over the conversation instead of cutting it off. */}
-      <div className="sticky bottom-0 bg-linear-to-t from-paper via-paper/70 to-transparent pt-8 pb-3">
+      {/* Before the first question the form sits in the normal flow, so it never covers the
+          topic buttons on a small phone. Once a conversation starts it sticks to the bottom. */}
+      <div
+        className={
+          turns.length === 0
+            ? "pt-2 pb-3"
+            : "sticky bottom-0 bg-linear-to-t from-paper via-paper/70 to-transparent pt-8 pb-3"
+        }
+      >
       <form
         onSubmit={handleSubmit}
         className="rounded-2xl border border-line/70 bg-surface/70 p-3 shadow-lg shadow-ink/10 backdrop-blur-md transition-colors focus-within:border-stamp/60 focus-within:bg-surface/90 focus-within:ring-4 focus-within:ring-stamp/15"
@@ -233,14 +241,16 @@ export function AskPanel({ slug, topics }: AskPanelProps) {
           onKeyDown={handleKeyDown}
           rows={2}
           maxLength={MAX_QUESTION_LENGTH}
-          placeholder="Contoh: Berapa dana untuk posyandu?"
+          placeholder="Ketik pertanyaanmu di sini…"
           className="w-full resize-none bg-transparent px-2 py-1 outline-none placeholder:text-muted focus-visible:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
           <span className="px-2 text-xs text-muted" aria-live="polite">
             {draft.length > MAX_QUESTION_LENGTH - 50
               ? `${MAX_QUESTION_LENGTH - draft.length} karakter lagi`
-              : "Boleh menyambung pertanyaan sebelumnya, misalnya \u201Ckalau di Krajan?\u201D"}
+              : turns.length === 0
+                ? "Ketik dengan bahasa sehari-hari, lalu tekan Tanya."
+                : "Boleh menyambung pertanyaan sebelumnya, misalnya \u201Ckalau di Krajan?\u201D"}
           </span>
           <button
             type="submit"

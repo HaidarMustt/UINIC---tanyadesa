@@ -71,13 +71,18 @@ export default async function DesaWelcomePage({ params }: PageProps) {
             <p className="max-w-xl text-lg text-muted">
               Tulis pertanyaan dengan bahasa sehari-hari. Jawabannya diambil dari APBDes resmi tahun {fiscalYear}.
             </p>
-            <Link
-              href={`/desa/${slug}/tanya`}
-              className="flex max-w-xl items-center justify-between gap-3 rounded-full border border-line bg-surface py-2 pr-2 pl-5 text-muted hover:border-stamp"
-            >
-              <span>Contoh: dana jalan RT 3 berapa?</span>
-              <span className="shrink-0 rounded-full bg-stamp px-5 py-2.5 font-extrabold text-surface">Tanya</span>
-            </Link>
+            {/* A real button, not a look-alike input: a fake text box made older testers tap it
+                expecting to type, then get lost when the page changed. */}
+            <div className="space-y-2">
+              <Link
+                href={`/desa/${slug}/tanya`}
+                className="inline-flex min-h-14 items-center gap-3 rounded-full bg-stamp px-7 text-lg font-extrabold text-surface hover:bg-stamp/90"
+              >
+                Mulai bertanya
+                <span aria-hidden="true">&rarr;</span>
+              </Link>
+              <p className="text-sm text-muted">Misalnya: &ldquo;Dana buat jalan RT 3 berapa?&rdquo;</p>
+            </div>
           </div>
 
           {example && (
