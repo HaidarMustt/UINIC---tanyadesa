@@ -1,47 +1,41 @@
 # Panduan mencoba TanyaDesa
 
-Panduan singkat untuk mencoba semua fitur dalam sekitar 10 menit. Semua data Desa Sukamaju adalah **simulasi**.
+Panduan singkat untuk mencoba semua fitur dalam sekitar 10 menit, sebaiknya lewat HP atau mode HP di peramban. Semua data Desa Sukamaju adalah **simulasi**.
 
-Alamat: https://uinic-tanyadesa.vercel.app
+Alamat awal: https://uinic-tanyadesa.vercel.app/desa/sukamaju
 
-## 1. Sebagai warga (tanpa akun)
+## A. Sebagai warga (tanpa akun)
 
-**Halaman sambutan** (`/desa/sukamaju`): tiga pilihan utama dan contoh tanya jawab sungguhan.
+| No | Langkah | Yang ditunjukkan |
+|---|---|---|
+| 1 | Buka alamat awal di atas. | Halaman sambutan, label data simulasi, dan tombol **Mulai bertanya**. |
+| 2 | Tekan **Mulai bertanya**, lalu ketik: *Dana buat jalan RT 3 berapa?* | Angka dihitung kode dari APBDes, bukan dikarang AI. Kode rekening sumber (2.1.01) tampil di bawah jawaban. |
+| 3 | Tekan saran **Yang sudah terpakai berapa?** | Pertanyaan lanjutan dipahami dari konteks sebelumnya. |
+| 4 | Tanyakan: *Apa itu SiLPA?* | Penjelasan istilah yang ditulis manusia, berlabel "Penjelasan istilah". |
+| 5 | Tanyakan: *Kapan jadwal posyandu di Tegalsari?* | Jawaban dari Info desa yang ditulis perangkat desa. |
+| 6 | Tanyakan: *Siapa saja nama penerima BLT?* | Data pribadi tidak ditampilkan untuk melindungi privasi warga. |
+| 7 | Tanyakan: *Besok hujan nggak?* | Topik di luar desa ditolak dengan sopan; TanyaDesa bukan chatbot umum. |
+| 8 | Nilai salah satu jawaban dengan **Ya** atau **Kurang**. | Penilaian warga yang nanti terlihat di panel petugas. |
+| 9 | Buka **Ringkasan**, lalu tekan **Lihat rincian angka lengkap**. | Ringkasan APBDes dalam kalimat sehari-hari, dengan tabel lengkap yang bisa dibuka. |
+| 10 | Buka **Aspirasi**, kirim satu usulan (boleh tanpa nama), lalu simpan **kode lacak**. | Kanal aspirasi yang tercatat dan bisa dipantau warga. |
 
-**Tanya** (`/desa/sukamaju/tanya`). Coba pertanyaan berikut, berurutan:
+## B. Sebagai petugas desa
 
-| Coba tanyakan | Yang diperhatikan |
-|---|---|
-| Dana buat jalan RT 3 berapa? | Angka dihitung dari APBDes, kode rekening sumber tampil di bawah |
-| lalu: yang sudah terpakai berapa? | Pertanyaan lanjutan dipahami dari konteks |
-| Berapa total belanja Dusun Ngemplak? lalu: kalau di Krajan? | Pertanyaan lanjutan dengan dusun lain |
-| Apa itu SiLPA? | Penjelasan istilah yang ditulis manusia, berlabel "Penjelasan istilah" |
-| Kapan jadwal posyandu di Tegalsari? | Dijawab dari Info desa yang ditulis perangkat desa |
-| Syarat bikin paspor apa? | Jujur bahwa infonya belum ada, tidak mengarang |
-| Siapa saja nama penerima BLT? | Nama penerima tidak ditampilkan untuk melindungi privasi |
-| Besok hujan nggak? | Topik di luar desa ditolak dengan sopan |
+Masuk di https://uinic-tanyadesa.vercel.app/masuk. Email dan password akun demo **tercantum di proposal**, tidak ditulis di repositori publik.
 
-Setelah setiap jawaban, coba tombol **"Tanya lanjutan"** dan penilaian **👍 / 👎**.
+| No | Langkah | Yang ditunjukkan |
+|---|---|---|
+| 11 | Akun Operator: buka **Pertanyaan warga**. | Jumlah pertanyaan, persentase terjawab dan dinilai membantu, pertanyaan yang belum terjawab, dan kegiatan yang paling sering ditanyakan. |
+| 12 | Buka **Info desa**, tambah satu info, lalu tanyakan info itu di halaman Tanya. | Info yang ditulis petugas langsung bisa dijawab untuk warga. |
+| 13 | Buka **Aspirasi**, tanggapi aspirasi dari langkah 10, lalu buka halaman lacak dengan kode lacaknya. | Alur aspirasi dari warga ke petugas dan kembali ke warga. |
+| 14 | Buka **APBDes**, unggah [file contoh](contoh/APBDes_Simulasi_Desa_Sukamaju_2026_v2.xlsx), periksa hasil baca, lalu tekan **Batalkan**. | Pembaca Excel dengan pemeriksaan per baris sebelum data terlihat warga. |
+| 15 | Keluar, lalu masuk dengan akun BPD. | BPD dapat membaca dan menanggapi aspirasi, tetapi tombol ubah Info desa tidak muncul (hak akses per peran). |
 
-**Ringkasan** (`/desa/sukamaju/ringkasan`): ringkasan dengan bahasa sehari-hari; buka **"Lihat rincian angka lengkap"** untuk tabel lengkapnya.
+## C. Data terbuka dan keandalan
 
-**Aspirasi** (`/desa/sukamaju/aspirasi`): kirim satu usulan (boleh tanpa nama). Simpan **kode lacaknya** untuk melihat tanggapan.
-
-## 2. Sebagai petugas desa
-
-Masuk di `/masuk`. Alamat email dan password akun demo **tercantum di proposal**, tidak ditulis di repositori publik.
-
-| Akun | Coba |
-|---|---|
-| Operator | **Pertanyaan warga**: apa yang ditanyakan dan seberapa membantu jawabannya. **Info desa**: tambah atau ubah info, lalu tanyakan di halaman Tanya. **Aspirasi**: lihat aspirasi yang tadi dikirim, ubah kategori, beri tanggapan, lalu cek di halaman lacak warga. **APBDes**: unggah [file contoh](contoh/APBDes_Simulasi_Desa_Sukamaju_2026_v2.xlsx), periksa hasil baca, lalu batalkan atau terbitkan. |
-| BPD | Membaca dan menanggapi aspirasi. Info desa dan Pertanyaan warga hanya bisa dibaca; tombol ubah tidak muncul. |
-
-## 3. Data terbuka (API)
-
-- Spesifikasi OpenAPI: https://uinic-tanyadesa.vercel.app/openapi.json
-- Ringkasan APBDes: https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/apbdes/summary
-- Info desa: https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/info
-- Unduh CSV: https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/apbdes?format=csv
+- Spesifikasi OpenAPI 3.1: https://uinic-tanyadesa.vercel.app/openapi.json
+- Ringkasan APBDes (JSON): https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/apbdes/summary
+- Baris APBDes (CSV): https://uinic-tanyadesa.vercel.app/api/v1/desa/sukamaju/apbdes?format=csv
 - Kesehatan sistem: https://uinic-tanyadesa.vercel.app/api/health
 - Riwayat uptime: https://stats.uptimerobot.com/ZMe0W6btlv
 
