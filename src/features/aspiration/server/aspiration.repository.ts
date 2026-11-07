@@ -77,6 +77,14 @@ export function findAspirationForResident(desaSlug: string, trackingCode: string
 // ---------------------------------------------------------------- panel (officers)
 
 // Always scoped by desa: an officer only ever sees their own desa's aspirations.
+export async function aspirationExists(desaSlug: string, trackingCode: string): Promise<boolean> {
+  const found = await db.aspiration.findFirst({
+    where: { trackingCode, desa: { slug: desaSlug } },
+    select: { id: true },
+  });
+  return found !== null;
+}
+
 export function findAspirationsForDesa(desaId: string, status: AspirationStatus | null) {
   return db.aspiration.findMany({
     where: { desaId, ...(status ? { status } : {}) },

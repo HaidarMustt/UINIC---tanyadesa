@@ -64,8 +64,8 @@ export default async function TrackAspirationPage({ params, searchParams }: Page
           <section className="space-y-3 rounded-2xl bg-stamp p-5 text-surface">
             <h1 className="text-2xl font-extrabold">Aspirasi terkirim</h1>
             <p className="text-sm opacity-85">
-              Simpan tautan halaman ini untuk melihat tanggapan desa. Tanpa tautan ini, aspirasi tanpa nama
-              tidak bisa dicari lagi.
+              Simpan tautan atau kode ini untuk melihat tanggapan desa. Kode bisa dimasukkan kapan saja di
+              halaman Aspirasi, bagian &ldquo;Sudah pernah mengirim?&rdquo;.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface/15 px-3 py-2">
               <span className="font-bold tracking-wide">Kode: {code}</span>

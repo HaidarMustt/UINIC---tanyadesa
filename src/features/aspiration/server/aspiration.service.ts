@@ -5,10 +5,11 @@ import { getPublishedDataset } from "@/features/apbdes/server/apbdes.service";
 import { NotFoundError, RateLimitError, ValidationError } from "@/lib/errors";
 import { checkCategorization, EMPTY_CATEGORIZATION, type Categorization } from "../lib/categorize";
 import { checkAspirationLimits } from "../lib/rate-limit";
-import { generateTrackingCode } from "../lib/tracking-code";
+import { generateTrackingCode, normalizeTrackingCode } from "../lib/tracking-code";
 import type { SubmitAspirationInput } from "../schemas";
 import { suggestCategory } from "./aspiration-ai";
 import {
+  aspirationExists,
   countDesaAspirationsSince,
   countIpAspirationsSince,
   countSessionAspirationsSince,
@@ -97,4 +98,18 @@ export async function getAspirationForResident(desaSlug: string, trackingCode: s
     // BigInt cannot cross into JSON or client components.
     relatedBudgetItem: item ? { ...item, budget: Number(item.budget), realized: Number(item.realized) } : null,
   };
+}
+
+export type TrackLookup = { ok: true; code: string } | { ok: false; message: string };
+
+/** Finds an aspiration from what the resident typed: a code (any case, with spaces or dashes) or a pasted link. */
+export async function lookupTrackingCode(desaSlug: string, input: string): Promise<TrackLookup> {
+  const code = normalizeTrackingCode(input);
+  if (!code) {
+    return { ok: false, message: "Kode lacak terdiri dari 8 huruf dan angka, misalnya k7m2pq9x. Periksa lagi ketikanmu." };
+  }
+  if (!(await aspirationExists(desaSlug, code))) {
+    return { ok: false, message: "Kode itu tidak ditemukan di desa ini. Periksa lagi kodenya." };
+  }
+  return { ok: true, code };
 }

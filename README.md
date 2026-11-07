@@ -65,7 +65,7 @@ TanyaDesa membuat data yang sama bisa **ditanyakan**, **dicek**, dan **ditanggap
 | Sambutan | `/desa/sukamaju` | Halaman awal yang ramah: tombol **Mulai bertanya**, pilihan yang jelas, dan contoh tanya jawab sungguhan, bukan langsung tabel angka. |
 | Ringkasan | `/desa/sukamaju/ringkasan` | Dibuka dengan kalimat sehari-hari ("Tahun ini desa mengelola Rp1,49 miliar untuk 28 kegiatan"), kabar kegiatan, lalu rincian angka lengkap yang bisa dibuka. |
 | Tanya | `/desa/sukamaju/tanya` | Bertanya tentang APBDes dan layanan desa. Bisa menyambung pertanyaan sebelumnya. Setiap jawaban menyebut sumbernya, memberi saran pertanyaan lanjutan, dan bisa dinilai membantu atau tidak. Pertanyaan tentang data pribadi ditolak dengan sopan. |
-| Aspirasi | `/desa/sukamaju/aspirasi` | Kirim usulan atau keluhan, boleh tanpa nama. Warga mendapat kode lacak untuk memantau tanggapan. |
+| Aspirasi | `/desa/sukamaju/aspirasi` | Kirim usulan atau keluhan, boleh tanpa nama. Warga mendapat kode lacak untuk memantau tanggapan; kode bisa dimasukkan lagi kapan saja di kotak "Sudah pernah mengirim?". |
 | Lacak aspirasi | `/desa/sukamaju/aspirasi/{kode}` | Melihat status dan tanggapan petugas. |
 
 Contoh pertanyaan yang bisa dijawab:
@@ -195,7 +195,7 @@ Skema database (13 tabel) ada di [docs/ERD.md](docs/ERD.md).
 
 ## Hasil pengujian
 
-**Tes otomatis:** 127 tes (Vitest), menguji pembaca Excel, perhitungan, alur tanya jawab, Info desa, pertanyaan lanjutan, batas kiriman, sesi, dan lainnya.
+**Tes otomatis:** 132 tes (Vitest), menguji pembaca Excel, perhitungan, alur tanya jawab, Info desa, pertanyaan lanjutan, batas kiriman, sesi, dan lainnya.
 
 ```
 npm test
