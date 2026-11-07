@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SimulationNotice } from "@/features/apbdes/components/simulation-notice";
 import { DesaSlugSchema } from "@/features/apbdes/schemas";
 import { AspirationForm } from "@/features/aspiration/components/aspiration-form";
+import { TrackForm } from "@/features/aspiration/components/track-form";
 import { getAspirationFormData } from "@/features/aspiration/server/aspiration.service";
 
 interface PageProps {
@@ -45,6 +46,8 @@ export default async function AspirationPage({ params }: PageProps) {
             BPD, dan kamu mendapat tautan untuk melihat tanggapannya.
           </p>
         </div>
+
+        <TrackForm slug={desa.slug} />
 
         <AspirationForm
           slug={desa.slug}
